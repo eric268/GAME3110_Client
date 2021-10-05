@@ -80,3 +80,14 @@ public static class ServertoClientSignifiers
 {
     public const int LoginResponse = 1;
 }
+
+public static class LoginResponse
+{
+    public const int Success = 1;
+
+    public const int FailureNameInUse = 2;
+
+    public const int FailureNameNotFound = 3;
+
+    public const int FailureIncorrectPassword = 4;
+}
