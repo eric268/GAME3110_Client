@@ -12,7 +12,7 @@ public class NetworkedClient : MonoBehaviour
     int reliableChannelID;
     int unreliableChannelID;
     int hostID;
-    int socketPort = 5491;
+    int socketPort = 25565;
     byte error;
     bool isConnected = false;
     int ourClientID;
@@ -104,7 +104,7 @@ public class NetworkedClient : MonoBehaviour
 
     private void ProcessRecievedMsg(string msg, int id)
     {
-        Debug.Log("msg recieved = " + msg + ".  connection id = " + id);
+        Debug.Log("msg received = " + msg + ".  connection id = " + id);
     }
 
     public bool IsConnected()
@@ -114,3 +114,25 @@ public class NetworkedClient : MonoBehaviour
 
 
 }
+public static class ClientToSeverSignifiers
+{
+    public const int Login = 1;
+    public const int CreateAccount = 2;
+}
+
+public static class ServertoClientSignifiers
+{
+    public const int LoginResponse = 1;
+}
+
+public static class LoginResponse
+{
+    public const int Success = 1;
+
+    public const int FailureNameInUse = 2;
+
+    public const int FailureNameNotFound = 3;
+
+    public const int FailureIncorrectPassword = 4;
+}
+
