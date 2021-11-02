@@ -17,10 +17,21 @@ public class NetworkedClient : MonoBehaviour
     bool isConnected = false;
     int ourClientID;
 
+    GameObject gameSystemManager;
+
     // Start is called before the first frame update
     void Start()
     {
-        Connect();
+        GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+        foreach (GameObject go in allObjects)
+        {
+            if (go.name == "GameSystemManager")
+            {
+                gameSystemManager = go;
+            }
+        }
+
+            Connect();
     }
 
     // Update is called once per frame
@@ -105,6 +116,26 @@ public class NetworkedClient : MonoBehaviour
     private void ProcessRecievedMsg(string msg, int id)
     {
         Debug.Log("msg received = " + msg + ".  connection id = " + id);
+        string[] csv = msg.Split(',');
+        int signifier = int.Parse(csv[0]);
+        if (signifier == ServertoClientSignifiers.LoginResponse)
+        {
+            int loginResultSignifier = int.Parse(csv[1]);
+
+            if (loginResultSignifier == LoginResponse.Success)
+            {
+                gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
+            }
+
+        }
+        else if (signifier == ServertoClientSignifiers.GameSessionStarted)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+        }
+        else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
+        {
+            Debug.Log("Our action no longer becons");
+        }
     }
 
     public bool IsConnected()
@@ -118,11 +149,15 @@ public static class ClientToSeverSignifiers
 {
     public const int Login = 1;
     public const int CreateAccount = 2;
+    public const int AddToGameSessionQueue = 3;
+    public const int TicTacToePlay = 4;
 }
 
 public static class ServertoClientSignifiers
 {
     public const int LoginResponse = 1;
+    public const int GameSessionStarted = 2;
+    public const int OpponentTicTacToePlay = 3;
 }
 
 public static class LoginResponse

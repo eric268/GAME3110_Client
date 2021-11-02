@@ -8,6 +8,7 @@ public class GameSystemManager : MonoBehaviour
     GameObject inputFieldUsername, inputFieldPassword, buttonSubmit, toggleLogIn, toggleCreateAccount;
     GameObject networkClient;
     GameObject findGameSessionButton, placeHolderGameButton;
+    GameObject nameTextBox, passwordTextBox;
     // Start is called before the first frame update
     void Start()
     {
@@ -27,27 +28,45 @@ public class GameSystemManager : MonoBehaviour
             else if (go.name == "networkClient")
                 networkClient = go;
             else if (go.name == "FindGameSessionButton")
-                networkClient = go;
+                findGameSessionButton = go;
             else if (go.name == "PlaceholderGameButton")
-                networkClient = go;
-            else
-            {
-                Debug.Log("GameObject: " + go.name + " not set to existing Game Object");
-            }
-
+                placeHolderGameButton = go;
+            else if (go.name == "NameTextbox")
+                nameTextBox = go;
+            else if (go.name == "PasswordTextbox")
+                passwordTextBox = go;
 
         }
+
         buttonSubmit.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
         toggleCreateAccount.GetComponent<Toggle>().onValueChanged.AddListener(ToggleCreateValueChanged);
         toggleLogIn.GetComponent<Toggle>().onValueChanged.AddListener(ToggleLogInValueChanged);
 
         findGameSessionButton.GetComponent<Button>().onClick.AddListener(FindGameSessionButtonPressed);
         placeHolderGameButton.GetComponent<Button>().onClick.AddListener(PlaceHolderGameButtonPressed);
+
+        ChangeGameState(GameStates.Login);
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            ChangeGameState(GameStates.Login);
+        }
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            ChangeGameState(GameStates.MainMenu);
+        }
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            ChangeGameState(GameStates.WaitingForMatch);
+        }
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            ChangeGameState(GameStates.PlayiongTicTacToe);
+        }
 
     }
 
@@ -78,12 +97,13 @@ public class GameSystemManager : MonoBehaviour
 
     private void FindGameSessionButtonPressed()
     {
-
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.AddToGameSessionQueue + "");
+        ChangeGameState(GameStates.WaitingForMatch);
     }
 
     private void PlaceHolderGameButtonPressed()
     {
-
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToePlay + "");
     }
 
     public void ChangeGameState(int newState)
@@ -98,6 +118,8 @@ public class GameSystemManager : MonoBehaviour
         toggleCreateAccount.SetActive(false);
         findGameSessionButton.SetActive(false);
         placeHolderGameButton.SetActive(false);
+        nameTextBox.SetActive(false);
+        passwordTextBox.SetActive(false);
 
         if (newState == GameStates.Login)
         {
@@ -106,6 +128,8 @@ public class GameSystemManager : MonoBehaviour
             buttonSubmit.SetActive(true);
             toggleLogIn.SetActive(true);
             toggleCreateAccount.SetActive(true);
+            nameTextBox.SetActive(true);
+            passwordTextBox.SetActive(true);
         }
         else if (newState == GameStates.MainMenu)
         {
