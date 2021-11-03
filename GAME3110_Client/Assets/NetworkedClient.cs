@@ -17,6 +17,7 @@ public class NetworkedClient : MonoBehaviour
     byte error;
     bool isConnected = false;
     int ourClientID;
+    string opponentsSymbol;
 
     GameObject gameSystemManager;
 
@@ -133,19 +134,31 @@ public class NetworkedClient : MonoBehaviour
         {
             gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
 
-            string opponentsSymbol = (csv[1] == "X") ? "O" : "X";
+            opponentsSymbol = (csv[1] == "X") ? "O" : "X";
             bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
         }
         else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
         {
-            Debug.Log("Our action no longer becons");
+
         }
         else if (signifier == ServertoClientSignifiers.OpponentPlayedAMove)
         {
             int cellNumberOfMovePlayed = int.Parse(csv[1]);
             gameSystemManager.GetComponent<GameSystemManager>().UpdateTicTacToeGridAfterMove(cellNumberOfMovePlayed);
             gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = true;
+            gameSystemManager.GetComponent<GameSystemManager>().UpdatePlayersCurrentTurnText(true);
+            
+        }
+        else if (signifier == ServertoClientSignifiers.OpponentWon)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText(opponentsSymbol + " Won!");
+            gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
+        }
+        else if (signifier == ServertoClientSignifiers.GameDrawn)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText("Game Drawn");
+            gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
         }
     }
 
@@ -163,6 +176,8 @@ public static class ClientToSeverSignifiers
     public const int AddToGameSessionQueue = 3;
     public const int TicTacToePlay = 4;
     public const int TicTacToeMoveMade = 5;
+    public const int GameOver = 6;
+    public const int GameDrawn = 7;
 }
 
 public static class ServertoClientSignifiers
@@ -171,6 +186,8 @@ public static class ServertoClientSignifiers
     public const int GameSessionStarted = 2;
     public const int OpponentTicTacToePlay = 3;
     public const int OpponentPlayedAMove = 4;
+    public const int OpponentWon = 5;
+    public const int GameDrawn = 6;
 }
 
 public static class LoginResponse
