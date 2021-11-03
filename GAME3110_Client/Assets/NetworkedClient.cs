@@ -151,6 +151,7 @@ public static class ClientToSeverSignifiers
     public const int CreateAccount = 2;
     public const int AddToGameSessionQueue = 3;
     public const int TicTacToePlay = 4;
+    public const int TicTacToeMoveMade = 5;
 }
 
 public static class ServertoClientSignifiers
@@ -158,6 +159,7 @@ public static class ServertoClientSignifiers
     public const int LoginResponse = 1;
     public const int GameSessionStarted = 2;
     public const int OpponentTicTacToePlay = 3;
+    public const int OpponentPlayedAMove = 4;
 }
 
 public static class LoginResponse

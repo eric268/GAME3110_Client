@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
 using UnityEngine;
 
 public class GameSystemManager : MonoBehaviour
@@ -9,6 +11,9 @@ public class GameSystemManager : MonoBehaviour
     GameObject networkClient;
     GameObject findGameSessionButton, placeHolderGameButton;
     GameObject nameTextBox, passwordTextBox;
+    GameObject ticTacToeBoard;
+    Button[] ticTacToeButtonCellArray;
+    string playersTicTacToeSymbol;
     // Start is called before the first frame update
     void Start()
     {
@@ -35,6 +40,8 @@ public class GameSystemManager : MonoBehaviour
                 nameTextBox = go;
             else if (go.name == "PasswordTextbox")
                 passwordTextBox = go;
+            else if (go.name == "TicTacToeBoard")
+                ticTacToeBoard = go;
 
         }
 
@@ -45,6 +52,9 @@ public class GameSystemManager : MonoBehaviour
         findGameSessionButton.GetComponent<Button>().onClick.AddListener(FindGameSessionButtonPressed);
         placeHolderGameButton.GetComponent<Button>().onClick.AddListener(PlaceHolderGameButtonPressed);
 
+        ticTacToeButtonCellArray = ticTacToeBoard.GetComponentsInChildren<Button>();
+        AddListenersToButtonCellArray();
+        playersTicTacToeSymbol = "X";
         ChangeGameState(GameStates.Login);
     }
 
@@ -70,6 +80,15 @@ public class GameSystemManager : MonoBehaviour
 
     }
 
+    private void AddListenersToButtonCellArray()
+    {
+        foreach (Button button in ticTacToeButtonCellArray)
+        {
+            button.onClick.AddListener(ButtonCellPressed);
+        }
+    }
+
+
     public void SubmitButtonPressed()
     {
         string n = inputFieldUsername.GetComponent<InputField>().text;
@@ -83,6 +102,28 @@ public class GameSystemManager : MonoBehaviour
         {
             networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.CreateAccount + "," + n + "," + p);
         }
+    }
+
+    private void ButtonCellPressed()
+    {
+        Button button = EventSystem.current.currentSelectedGameObject.GetComponent<Button>();
+        TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
+        int i = 0;
+        for (; i < ticTacToeButtonCellArray.Length; i++)
+        {
+            if (button == ticTacToeButtonCellArray[i])
+            {
+                break;
+            }
+        }
+
+        if (buttonText.text == "")
+        {
+            buttonText.text = playersTicTacToeSymbol;
+        }
+        else
+            Debug.Log("Cell already contains letter");
+        
     }
 
     public void ToggleCreateValueChanged(bool val)
@@ -106,6 +147,8 @@ public class GameSystemManager : MonoBehaviour
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToePlay + "");
     }
 
+
+
     public void ChangeGameState(int newState)
     {
         //inputFieldUsername, inputFieldPassword, buttonSubmit, toggleLogIn, toggleCreateAccount;
@@ -120,6 +163,7 @@ public class GameSystemManager : MonoBehaviour
         placeHolderGameButton.SetActive(false);
         nameTextBox.SetActive(false);
         passwordTextBox.SetActive(false);
+        ticTacToeBoard.SetActive(false);
 
         if (newState == GameStates.Login)
         {
@@ -142,6 +186,7 @@ public class GameSystemManager : MonoBehaviour
         else if (newState == GameStates.PlayiongTicTacToe)
         {
             placeHolderGameButton.SetActive(true);
+            ticTacToeBoard.SetActive(true);
         }
     }
 
