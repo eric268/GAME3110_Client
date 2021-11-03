@@ -7,9 +7,9 @@ using UnityEngine;
 
 public class GameSystemManager : MonoBehaviour
 {
-    GameObject inputFieldUsername, inputFieldPassword, buttonSubmit, toggleLogIn, toggleCreateAccount;
+    GameObject inputFieldUsername, inputFieldPassword, chatInputField, buttonSubmit, toggleLogIn, toggleCreateAccount;
     GameObject networkClient;
-    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText;
+    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, chatScrollViewText;
     GameObject nameTextBox, passwordTextBox;
     GameObject ticTacToeBoard,gameStatusText;
     public Button[] ticTacToeButtonCellArray;
@@ -55,6 +55,12 @@ public class GameSystemManager : MonoBehaviour
                 leaderboardNamesText = go;
             else if (go.name == "LeaderboardWinsText")
                 leaderboardWinsText = go;
+            else if (go.name == "ChatScrollView")
+                chatScrollView = go;
+            else if (go.name == "ChatInputField")
+                chatInputField = go;
+            else if (go.name == "ChatScrollViewText")
+                chatScrollViewText = go;
         }
 
         buttonSubmit.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
@@ -69,29 +75,24 @@ public class GameSystemManager : MonoBehaviour
         AddListenersToButtonCellArray();
         
         ChangeGameState(GameStates.Login);
+
+        chatScrollViewText.GetComponent<Text>().text = "IM WORKING";
     }
 
     // Update is called once per frame
     void Update()
     {
-        //if (Input.GetKeyDown(KeyCode.A))
-        //{
-        //    networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString());
-        //    networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameDrawn.ToString());
-        //}
-        //if (Input.GetKeyDown(KeyCode.S))
-        //{
-        //    ChangeGameState(GameStates.MainMenu);
-        //}
-        //if (Input.GetKeyDown(KeyCode.D))
-        //{
-        //    ChangeGameState(GameStates.WaitingForMatch);
-        //}
-        //if (Input.GetKeyDown(KeyCode.F))
-        //{
-        //    ChangeGameState(GameStates.PlayiongTicTacToe);
-        //}
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            Debug.Log(chatScrollViewText.name);
 
+            if (chatInputField.GetComponent<InputField>().text != "")
+            {
+                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",",ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<InputField>().text));
+                chatScrollViewText.GetComponent<Text>().text += "\n" + userName + ": " + chatInputField.GetComponent<InputField>().text;
+                chatInputField.GetComponent<InputField>().text = "";
+            }
+        }
     }
 
     private void AddListenersToButtonCellArray()
@@ -275,6 +276,10 @@ public class GameSystemManager : MonoBehaviour
         leaderboardWinsText.GetComponent<TextMeshProUGUI>().text += playerWins;
 
     }
+    public void AddOpponenetMessageToChat(string message)
+    {
+        chatScrollViewText.GetComponent<TextMeshProUGUI>().text += message;
+    }
 
     public void ChangeGameState(int newState)
     {
@@ -294,6 +299,8 @@ public class GameSystemManager : MonoBehaviour
         leaderboardButton.SetActive(false);
         leaderboardNamesText.SetActive(false);
         leaderboardWinsText.SetActive(false);
+        chatScrollView.SetActive(false);
+        chatInputField.SetActive(false);
 
         if (newState == GameStates.Login)
         {
@@ -320,6 +327,8 @@ public class GameSystemManager : MonoBehaviour
             mainMenuGameButton.SetActive(true);
             ticTacToeBoard.SetActive(true);
             gameStatusText.SetActive(true);
+            chatScrollView.SetActive(true);
+            chatInputField.SetActive(true);
             ResetAllCellButtonTextValues();
         }
         else if (newState == GameStates.Leaderboard)

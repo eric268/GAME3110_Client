@@ -177,6 +177,11 @@ public class NetworkedClient : MonoBehaviour
                 gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults, leaderboardWinsResults);
             }
         }
+        else if (signifier == ServertoClientSignifiers.SendPlayerChatToOpponent)
+        {
+            string message = "\n" + csv[1] + ": " + csv[2];
+            gameSystemManager.GetComponent<GameSystemManager>().AddOpponenetMessageToChat(message);
+        }
     }
 
     public bool IsConnected()
@@ -197,6 +202,7 @@ public static class ClientToSeverSignifiers
     public const int GameDrawn = 7;
     public const int RestartGame = 8;
     public const int ShowLeaderboard = 9;
+    public const int PlayerSentMessageInChat = 10;
 }
 
 public static class ServertoClientSignifiers
@@ -209,6 +215,7 @@ public static class ServertoClientSignifiers
     public const int GameDrawn = 6;
     public const int OpponentRestartedGame = 7;
     public const int LeaderboardShowRequest = 8;
+    public const int SendPlayerChatToOpponent = 9;
 }
 
 public static class LoginResponse
