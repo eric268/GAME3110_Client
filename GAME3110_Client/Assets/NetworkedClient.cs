@@ -154,7 +154,7 @@ public class NetworkedClient : MonoBehaviour
         }
         else if (signifier == ServertoClientSignifiers.OpponentWon)
         {
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText(opponentsSymbol + " Won!");
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText(csv[1] + " Won!");
             gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
         }
         else if (signifier == ServertoClientSignifiers.GameDrawn)

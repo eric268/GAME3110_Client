@@ -200,7 +200,7 @@ public class GameSystemManager : MonoBehaviour
         {
             if (CheckIfGameWon())
             {
-                gameStatusText.GetComponent<TextMeshProUGUI>().text = playersTicTacToeSymbol + " Won!";
+                gameStatusText.GetComponent<TextMeshProUGUI>().text = userName + " Won!";
                 networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString() + "," + userName);
                 restartGameButton.SetActive(true);
                 return true;
@@ -270,7 +270,6 @@ public class GameSystemManager : MonoBehaviour
     public void AddPlayerToLeaderboardTextBox(string playerInfo)
     {
         leaderboardText.GetComponent<TextMeshProUGUI>().text += playerInfo;
-        leaderboardText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
     }
 
     public void ChangeGameState(int newState)
