@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using TMPro;
 using UnityEngine.Networking;
 
 public class NetworkedClient : MonoBehaviour
@@ -131,10 +132,20 @@ public class NetworkedClient : MonoBehaviour
         else if (signifier == ServertoClientSignifiers.GameSessionStarted)
         {
             gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+
+            string opponentsSymbol = (csv[1] == "X") ? "O" : "X";
+            bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
+            gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
         }
         else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
         {
             Debug.Log("Our action no longer becons");
+        }
+        else if (signifier == ServertoClientSignifiers.OpponentPlayedAMove)
+        {
+            int cellNumberOfMovePlayed = int.Parse(csv[1]);
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateTicTacToeGridAfterMove(cellNumberOfMovePlayed);
+            gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = true;
         }
     }
 

@@ -12,8 +12,9 @@ public class GameSystemManager : MonoBehaviour
     GameObject findGameSessionButton, placeHolderGameButton;
     GameObject nameTextBox, passwordTextBox;
     GameObject ticTacToeBoard;
-    Button[] ticTacToeButtonCellArray;
-    string playersTicTacToeSymbol;
+    public Button[] ticTacToeButtonCellArray;
+    string playersTicTacToeSymbol, opponentsTicTacToeSymbol;
+    public bool myTurnToMove;
     // Start is called before the first frame update
     void Start()
     {
@@ -54,7 +55,7 @@ public class GameSystemManager : MonoBehaviour
 
         ticTacToeButtonCellArray = ticTacToeBoard.GetComponentsInChildren<Button>();
         AddListenersToButtonCellArray();
-        playersTicTacToeSymbol = "X";
+        
         ChangeGameState(GameStates.Login);
     }
 
@@ -108,22 +109,17 @@ public class GameSystemManager : MonoBehaviour
     {
         Button button = EventSystem.current.currentSelectedGameObject.GetComponent<Button>();
         TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
-        int i = 0;
-        for (; i < ticTacToeButtonCellArray.Length; i++)
+
+        for (int i = 0; i < ticTacToeButtonCellArray.Length; i++)
         {
-            if (button == ticTacToeButtonCellArray[i])
+            if (button == ticTacToeButtonCellArray[i] && buttonText.text == "" && myTurnToMove == true)
             {
+                myTurnToMove = false;
+                buttonText.text = playersTicTacToeSymbol;
+                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToeMoveMade + "," + i);
                 break;
             }
-        }
-
-        if (buttonText.text == "")
-        {
-            buttonText.text = playersTicTacToeSymbol;
-        }
-        else
-            Debug.Log("Cell already contains letter");
-        
+        }   
     }
 
     public void ToggleCreateValueChanged(bool val)
@@ -147,6 +143,17 @@ public class GameSystemManager : MonoBehaviour
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToePlay + "");
     }
 
+    public void InitGameSymbolsSetCurrentTurn(string playerSymbol, string opponentSymbol, bool myTurn)
+    {
+        playersTicTacToeSymbol = playerSymbol;
+        opponentsTicTacToeSymbol = opponentSymbol;
+        myTurnToMove = myTurn;
+    }
+
+    public void UpdateTicTacToeGridAfterMove(int cellNumber)
+    {
+        ticTacToeButtonCellArray[cellNumber].GetComponentInChildren<TextMeshProUGUI>().text = opponentsTicTacToeSymbol;
+    }
 
 
     public void ChangeGameState(int newState)
