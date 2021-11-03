@@ -9,7 +9,7 @@ public class GameSystemManager : MonoBehaviour
 {
     GameObject inputFieldUsername, inputFieldPassword, buttonSubmit, toggleLogIn, toggleCreateAccount;
     GameObject networkClient;
-    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardText;
+    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText;
     GameObject nameTextBox, passwordTextBox;
     GameObject ticTacToeBoard,gameStatusText;
     public Button[] ticTacToeButtonCellArray;
@@ -51,8 +51,10 @@ public class GameSystemManager : MonoBehaviour
                 restartGameButton = go;
             else if (go.name == "LeaderboardButton")
                 leaderboardButton = go;
-            else if (go.name == "LeaderboardText")
-                leaderboardText = go;
+            else if (go.name == "LeaderboardNamesText")
+                leaderboardNamesText = go;
+            else if (go.name == "LeaderboardWinsText")
+                leaderboardWinsText = go;
         }
 
         buttonSubmit.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
@@ -267,9 +269,11 @@ public class GameSystemManager : MonoBehaviour
         ChangeGameState(GameStates.Leaderboard);
     }
 
-    public void AddPlayerToLeaderboardTextBox(string playerInfo)
+    public void AddPlayerToLeaderboardTextBox(string playerUsername, string playerWins)
     {
-        leaderboardText.GetComponent<TextMeshProUGUI>().text += playerInfo;
+        leaderboardNamesText.GetComponent<TextMeshProUGUI>().text += playerUsername;
+        leaderboardWinsText.GetComponent<TextMeshProUGUI>().text += playerWins;
+
     }
 
     public void ChangeGameState(int newState)
@@ -288,7 +292,8 @@ public class GameSystemManager : MonoBehaviour
         gameStatusText.SetActive(false);
         restartGameButton.SetActive(false);
         leaderboardButton.SetActive(false);
-        leaderboardText.SetActive(false);
+        leaderboardNamesText.SetActive(false);
+        leaderboardWinsText.SetActive(false);
 
         if (newState == GameStates.Login)
         {
@@ -320,8 +325,10 @@ public class GameSystemManager : MonoBehaviour
         else if (newState == GameStates.Leaderboard)
         {
             mainMenuGameButton.SetActive(true);
-            leaderboardText.SetActive(true);
-            leaderboardText.GetComponent<TextMeshProUGUI>().text = "\t\tLeaderboard\n";
+            leaderboardNamesText.SetActive(true);
+            leaderboardWinsText.SetActive(true);
+            leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\tLeaderboard\n\n";
+            leaderboardWinsText.GetComponent<TextMeshProUGUI>().text = "\n\n";
             networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
 
         }

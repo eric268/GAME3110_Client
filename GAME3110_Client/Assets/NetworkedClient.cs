@@ -172,8 +172,9 @@ public class NetworkedClient : MonoBehaviour
             int playerRanking = 1;
             for(int i = 2; i < (numberOfPlayersToDisplay*2) + 2; i += 2)
             {
-                string leaderboardPlayerResults = playerRanking++ + ". " + csv[i]+ "\t\t\tWins: " + csv[i + 1] + "\n";
-                gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults);
+                string leaderboardPlayerResults = playerRanking++ + ". " + csv[i]+ "\n";
+                string leaderboardWinsResults = "Wins: " + csv[i + 1] + "\n";
+                gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults, leaderboardWinsResults);
             }
         }
     }
