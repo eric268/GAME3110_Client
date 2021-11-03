@@ -19,6 +19,7 @@ public class NetworkedClient : MonoBehaviour
     int ourClientID;
     string opponentsSymbol;
 
+
     GameObject gameSystemManager;
 
     // Start is called before the first frame update
@@ -127,6 +128,7 @@ public class NetworkedClient : MonoBehaviour
             if (loginResultSignifier == LoginResponse.Success)
             {
                 gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
+                gameSystemManager.GetComponent<GameSystemManager>().userName = csv[2];
             }
 
         }
@@ -160,6 +162,20 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText("Game Drawn");
             gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
         }
+        else if (signifier == ServertoClientSignifiers.OpponentRestartedGame)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+        }
+        else if (signifier == ServertoClientSignifiers.LeaderboardShowRequest)
+        {
+            int numberOfPlayersToDisplay = int.Parse(csv[1]);
+            int playerRanking = 1;
+            for(int i = 2; i < (numberOfPlayersToDisplay*2) + 2; i += 2)
+            {
+                string leaderboardPlayerResults = playerRanking++ + ". " + csv[i]+ "\t\t\tWins: " + csv[i + 1] + "\n";
+                gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults);
+            }
+        }
     }
 
     public bool IsConnected()
@@ -178,6 +194,8 @@ public static class ClientToSeverSignifiers
     public const int TicTacToeMoveMade = 5;
     public const int GameOver = 6;
     public const int GameDrawn = 7;
+    public const int RestartGame = 8;
+    public const int ShowLeaderboard = 9;
 }
 
 public static class ServertoClientSignifiers
@@ -188,6 +206,8 @@ public static class ServertoClientSignifiers
     public const int OpponentPlayedAMove = 4;
     public const int OpponentWon = 5;
     public const int GameDrawn = 6;
+    public const int OpponentRestartedGame = 7;
+    public const int LeaderboardShowRequest = 8;
 }
 
 public static class LoginResponse

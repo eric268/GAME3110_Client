@@ -9,13 +9,14 @@ public class GameSystemManager : MonoBehaviour
 {
     GameObject inputFieldUsername, inputFieldPassword, buttonSubmit, toggleLogIn, toggleCreateAccount;
     GameObject networkClient;
-    GameObject findGameSessionButton, mainMenuGameButton;
+    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardText;
     GameObject nameTextBox, passwordTextBox;
     GameObject ticTacToeBoard,gameStatusText;
     public Button[] ticTacToeButtonCellArray;
     string playersTicTacToeSymbol,opponentsTicTacToeSymbol;
     public bool myTurnToMove;
     int numberOfTotalMovesMade = 0;
+    public string userName;
     // Start is called before the first frame update
     void Start()
     {
@@ -46,9 +47,12 @@ public class GameSystemManager : MonoBehaviour
                 ticTacToeBoard = go;
             else if (go.name == "GameStatusText")
                 gameStatusText = go;
-
-
-
+            else if (go.name == "RestartGameButton")
+                restartGameButton = go;
+            else if (go.name == "LeaderboardButton")
+                leaderboardButton = go;
+            else if (go.name == "LeaderboardText")
+                leaderboardText = go;
         }
 
         buttonSubmit.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
@@ -57,7 +61,8 @@ public class GameSystemManager : MonoBehaviour
 
         findGameSessionButton.GetComponent<Button>().onClick.AddListener(FindGameSessionButtonPressed);
         mainMenuGameButton.GetComponent<Button>().onClick.AddListener(MainMenuGameButtonPressed);
-
+        restartGameButton.GetComponent<Button>().onClick.AddListener(RestartGameButtonPressed);
+        leaderboardButton.GetComponent<Button>().onClick.AddListener(ShowLeaderboardButtonPressed); 
         ticTacToeButtonCellArray = ticTacToeBoard.GetComponentsInChildren<Button>();
         AddListenersToButtonCellArray();
         
@@ -67,23 +72,23 @@ public class GameSystemManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString());
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameDrawn.ToString());
-        }
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            ChangeGameState(GameStates.MainMenu);
-        }
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            ChangeGameState(GameStates.WaitingForMatch);
-        }
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            ChangeGameState(GameStates.PlayiongTicTacToe);
-        }
+        //if (Input.GetKeyDown(KeyCode.A))
+        //{
+        //    networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString());
+        //    networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameDrawn.ToString());
+        //}
+        //if (Input.GetKeyDown(KeyCode.S))
+        //{
+        //    ChangeGameState(GameStates.MainMenu);
+        //}
+        //if (Input.GetKeyDown(KeyCode.D))
+        //{
+        //    ChangeGameState(GameStates.WaitingForMatch);
+        //}
+        //if (Input.GetKeyDown(KeyCode.F))
+        //{
+        //    ChangeGameState(GameStates.PlayiongTicTacToe);
+        //}
 
     }
 
@@ -196,13 +201,15 @@ public class GameSystemManager : MonoBehaviour
             if (CheckIfGameWon())
             {
                 gameStatusText.GetComponent<TextMeshProUGUI>().text = playersTicTacToeSymbol + " Won!";
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString());
+                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString() + "," + userName);
+                restartGameButton.SetActive(true);
                 return true;
             }
             else if (numberOfTotalMovesMade == 9)
             {
                 gameStatusText.GetComponent<TextMeshProUGUI>().text = "Game Drawn";
                 networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameDrawn.ToString());
+                restartGameButton.SetActive(true);
                 return true;
             }
         }
@@ -249,6 +256,22 @@ public class GameSystemManager : MonoBehaviour
         gameStatusText.GetComponent<TextMeshProUGUI>().text = gameText;
     }
 
+    public void RestartGameButtonPressed()
+    {
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.RestartGame.ToString());
+        ChangeGameState(GameStates.PlayiongTicTacToe);
+    }
+
+    void ShowLeaderboardButtonPressed()
+    {
+        ChangeGameState(GameStates.Leaderboard);
+    }
+
+    public void AddPlayerToLeaderboardTextBox(string playerInfo)
+    {
+        leaderboardText.GetComponent<TextMeshProUGUI>().text += playerInfo;
+        leaderboardText.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
+    }
 
     public void ChangeGameState(int newState)
     {
@@ -264,6 +287,9 @@ public class GameSystemManager : MonoBehaviour
         passwordTextBox.SetActive(false);
         ticTacToeBoard.SetActive(false);
         gameStatusText.SetActive(false);
+        restartGameButton.SetActive(false);
+        leaderboardButton.SetActive(false);
+        leaderboardText.SetActive(false);
 
         if (newState == GameStates.Login)
         {
@@ -278,6 +304,7 @@ public class GameSystemManager : MonoBehaviour
         else if (newState == GameStates.MainMenu)
         {
             findGameSessionButton.SetActive(true);
+            leaderboardButton.SetActive(true);
         }
         else if (newState == GameStates.WaitingForMatch)
         {
@@ -291,6 +318,14 @@ public class GameSystemManager : MonoBehaviour
             gameStatusText.SetActive(true);
             ResetAllCellButtonTextValues();
         }
+        else if (newState == GameStates.Leaderboard)
+        {
+            mainMenuGameButton.SetActive(true);
+            leaderboardText.SetActive(true);
+            leaderboardText.GetComponent<TextMeshProUGUI>().text = "\t\tLeaderboard\n";
+            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
+
+        }
     }
 
 }
@@ -301,4 +336,5 @@ public static class GameStates
     public const int MainMenu = 2;
     public const int WaitingForMatch = 3;
     public const int PlayiongTicTacToe = 4;
+    public const int Leaderboard = 5;
 }
