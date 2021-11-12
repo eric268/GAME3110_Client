@@ -397,6 +397,7 @@ public class GameSystemManager : MonoBehaviour
             replayDropDown.SetActive(true);
             replayDropDownButton.SetActive(true);
             replayDropDownText.SetActive(true);
+            GetNumberOfSavedRecordingsFromServer();
         }
         else if (newState == GameStates.WaitingForMatch)
         {
@@ -492,21 +493,22 @@ public class GameSystemManager : MonoBehaviour
 
         //How to get index of selection
         int menuIndex = replayDropDown.GetComponent<TMP_Dropdown>().value;
-        Debug.Log(menuIndex);
+
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer, menuIndex));
 
         //Index replay 
 
-        List<TMP_Dropdown.OptionData> menuOptions = replayDropDown.GetComponent<TMP_Dropdown>().options;
+        //List<TMP_Dropdown.OptionData> menuOptions = replayDropDown.GetComponent<TMP_Dropdown>().options;
 
-        //Gives a list of existing options
+        ////Gives a list of existing options
 
-        foreach (TMP_Dropdown.OptionData m in menuOptions)
-            Debug.Log(m.text);
+        //foreach (TMP_Dropdown.OptionData m in menuOptions)
+        //    Debug.Log(m.text);
         
-        TMP_Dropdown.OptionData add = new TMP_Dropdown.OptionData();
-        add.text = "Eric's addition";
-        menuOptions.Add(add);
-        replayDropDown.GetComponent<TMP_Dropdown>().options = menuOptions;
+        //TMP_Dropdown.OptionData add = new TMP_Dropdown.OptionData();
+        //add.text = "Eric's addition";
+        //menuOptions.Add(add);
+        //replayDropDown.GetComponent<TMP_Dropdown>().options = menuOptions;
         //Clear drop downs do this on start
         //List<TMP_Dropdown.OptionData> clearOptions = new List<TMP_Dropdown.OptionData>();
         //replayDropDown.GetComponent<TMP_Dropdown>().options = clearOptions;
@@ -523,23 +525,8 @@ public class GameSystemManager : MonoBehaviour
 
     void GameOver()
     {
-        //Can also call game over when one of the players leaves the game
-        //Just send a message if a player selects the main menu button and check if game is over or not
-
         gameStarted = false;
         replayRecorder.numberOfTurns = ReplayRecorder.turnNumber;
-
-        //Debug.Log("Replay name id: " + replayRecorder.gameID);
-        //Debug.Log("Starting symbol: " + replayRecorder.startingSymbol);
-        //Debug.Log("Number of turns: " + replayRecorder.numberOfTurns);
-        
-        //for (int i = 0; i < replayRecorder.numberOfTurns; i++)
-        //{
-        //    Debug.Log("Turn " + i + ": Cell Number : " + replayRecorder.cellNumberOfTurn[i] + "  Time: " + replayRecorder.timeBetweenTurnsArray[i]);
-        //}
-
-        //Get info from server as to which number it should be named
-        // Add name 
 
         //Send info to the server
         SendInformationToServer();
@@ -559,6 +546,53 @@ public class GameSystemManager : MonoBehaviour
         Debug.Log(recordingPacket);
 
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingSentToServer, recordingPacket));
+    }
+
+    public void LoadAndBeginRecording(string recordingInfo)
+    {
+        string[] csv = recordingInfo.Split(',');
+
+        ChangeGameState(GameStates.PlayiongTicTacToe);
+
+        replayRecorder.gameID =int.Parse(csv[1]);
+        replayRecorder.startingSymbol = csv[2];
+        replayRecorder.numberOfTurns =int.Parse(csv[3]);
+        for (int i = 4; i < replayRecorder.numberOfTurns + 4; i++)
+        {
+            replayRecorder.timeBetweenTurnsArray[i] = int.Parse(csv[i]);
+        }
+        for (int i = replayRecorder.numberOfTurns + 4; i < (2* replayRecorder.numberOfTurns) + 4; i++)
+        {
+            replayRecorder.cellNumberOfTurn[i] =int.Parse(csv[i]);
+        }
+
+        Debug.Log("Recording Loaded on client");
+        Debug.Log("Game ID : " + replayRecorder.gameID);
+        Debug.Log("Number of Turns: " + replayRecorder.numberOfTurns);
+        for (int i = 0; i < replayRecorder.numberOfTurns; i++)
+        {
+            Debug.Log("Turn Number: " + i + " Time: " + replayRecorder.timeBetweenTurnsArray[i] + " Cell: " + replayRecorder.cellNumberOfTurn[i]);
+        }
+
+    }
+
+    void GetNumberOfSavedRecordingsFromServer()
+    {
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RequestNumberOfSavedRecordings));
+    }
+
+    public void UpdateRecordingDropdownMenu(int numberOfSavedRecordings)
+    {
+        List<TMP_Dropdown.OptionData> clearOptions = new List<TMP_Dropdown.OptionData>();
+        replayDropDown.GetComponent<TMP_Dropdown>().options = clearOptions;
+
+        for (int i = 0; i < numberOfSavedRecordings; i++)
+        {
+            TMP_Dropdown.OptionData recordingSlot = new TMP_Dropdown.OptionData();
+            recordingSlot.text = "Recording " + (i + 1);
+            replayDropDown.GetComponent<TMP_Dropdown>().options.Add(recordingSlot);
+        }
+        
     }
 }
 
