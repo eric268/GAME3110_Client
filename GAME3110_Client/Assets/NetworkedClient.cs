@@ -40,8 +40,6 @@ public class NetworkedClient : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //if(Input.GetKeyDown(KeyCode.S))
-          //  SendMessageToHost("Hello from client");
 
         UpdateNetworkConnection();
     }
@@ -135,18 +133,14 @@ public class NetworkedClient : MonoBehaviour
         }
         else if (signifier == ServertoClientSignifiers.GameSessionStarted)
         {
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
 
             opponentsSymbol = (csv[1] == "X") ? "O" : "X";
             bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
             gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
-
-        }
-        else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
-        {
-
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
         }
         else if (signifier == ServertoClientSignifiers.OpponentPlayedAMove)
         {
@@ -170,7 +164,7 @@ public class NetworkedClient : MonoBehaviour
         }
         else if (signifier == ServertoClientSignifiers.OpponentRestartedGame)
         {
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
         }
         else if (signifier == ServertoClientSignifiers.LeaderboardShowRequest)
         {
@@ -198,7 +192,7 @@ public class NetworkedClient : MonoBehaviour
         else if (signifier == ServertoClientSignifiers.SendTicTacToeCellsToObserver)
         {
             string boardResults = csv[1];
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
             gameSystemManager.GetComponent<GameSystemManager>().PopulateObserverTicTacToeBoard(boardResults);
 
             int i = 8;
@@ -256,6 +250,8 @@ public static class ClientToSeverSignifiers
     public const int RecordingRequestedFromServer = 14;
     public const int RequestNumberOfSavedRecordings = 15;
     public const int ClearRecordingOnServer = 16;
+    public const int PlayerLeftGameRoom = 17;
+    public const int PlayerHasLeftGameQueue = 18;
 }
 
 public static class ServertoClientSignifiers
@@ -287,5 +283,11 @@ public static class LoginResponse
     public const int FailureNameNotFound = 3;
 
     public const int FailureIncorrectPassword = 4;
+}
+
+public static class GameRoomSearchResponse
+{
+    public const int SearchSucceeded = 1;
+    public const int SearchFailed = 2;
 }
 
