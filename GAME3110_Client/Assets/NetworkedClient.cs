@@ -141,6 +141,7 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
             gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
+            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.gameID = int.Parse(csv[3]);
 
         }
         else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
@@ -153,7 +154,7 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().UpdateTicTacToeGridAfterMove(cellNumberOfMovePlayed);
             gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = true;
             gameSystemManager.GetComponent<GameSystemManager>().UpdatePlayersCurrentTurnText(true);
-            
+            gameSystemManager.GetComponent<GameSystemManager>().OpponentMadeMove(cellNumberOfMovePlayed);
         }
         else if (signifier == ServertoClientSignifiers.OpponentWon)
         {
@@ -241,6 +242,7 @@ public static class ClientToSeverSignifiers
     public const int PlayerSentMessageInChat = 10;
     public const int SearchGameRoomRequestMade = 11;
     public const int SendCellsOfTicTacToeBoardToServer = 12;
+    public const int RecordingSentToServer = 13;
 }
 
 public static class ServertoClientSignifiers
