@@ -139,6 +139,7 @@ public class NetworkedClient : MonoBehaviour
             opponentsSymbol = (csv[1] == "X") ? "O" : "X";
             bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
+            gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
         }
         else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
         {

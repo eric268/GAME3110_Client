@@ -9,7 +9,7 @@ public class GameSystemManager : MonoBehaviour
 {
     GameObject inputFieldUsername, inputFieldPassword, chatInputField, buttonSubmit, toggleLogIn, toggleCreateAccount;
     GameObject networkClient;
-    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, chatScrollViewText;
+    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView;
     GameObject nameTextBox, passwordTextBox;
     GameObject ticTacToeBoard,gameStatusText;
     public Button[] ticTacToeButtonCellArray;
@@ -17,6 +17,7 @@ public class GameSystemManager : MonoBehaviour
     public bool myTurnToMove;
     int numberOfTotalMovesMade = 0;
     public string userName;
+    public TextMeshProUGUI chatScrollViewText;
     // Start is called before the first frame update
     void Start()
     {
@@ -58,9 +59,13 @@ public class GameSystemManager : MonoBehaviour
             else if (go.name == "ChatScrollView")
                 chatScrollView = go;
             else if (go.name == "ChatInputField")
+            {
                 chatInputField = go;
+            }
             else if (go.name == "ChatScrollViewText")
-                chatScrollViewText = go;
+            {
+                chatScrollViewText = go.GetComponent<TextMeshProUGUI>();
+            }
         }
 
         buttonSubmit.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
@@ -75,8 +80,6 @@ public class GameSystemManager : MonoBehaviour
         AddListenersToButtonCellArray();
         
         ChangeGameState(GameStates.Login);
-
-        chatScrollViewText.GetComponent<Text>().text = "IM WORKING";
     }
 
     // Update is called once per frame
@@ -84,13 +87,11 @@ public class GameSystemManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Return))
         {
-            Debug.Log(chatScrollViewText.name);
-
-            if (chatInputField.GetComponent<InputField>().text != "")
+            if (chatInputField.GetComponent<TMP_InputField>().text != "")
             {
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",",ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<InputField>().text));
-                chatScrollViewText.GetComponent<Text>().text += "\n" + userName + ": " + chatInputField.GetComponent<InputField>().text;
-                chatInputField.GetComponent<InputField>().text = "";
+                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",",ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
+                chatScrollViewText.text += "\n" + userName + ": " + chatInputField.GetComponent<TMP_InputField>().text;
+                chatInputField.GetComponent<TMP_InputField>().text = "";
             }
         }
     }
@@ -278,7 +279,7 @@ public class GameSystemManager : MonoBehaviour
     }
     public void AddOpponenetMessageToChat(string message)
     {
-        chatScrollViewText.GetComponent<TextMeshProUGUI>().text += message;
+        chatScrollViewText.text += message;
     }
 
     public void ChangeGameState(int newState)
