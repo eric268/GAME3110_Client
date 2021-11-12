@@ -9,8 +9,8 @@ public class GameSystemManager : MonoBehaviour
 {
     GameObject inputFieldUsername, inputFieldPassword, chatInputField, buttonSubmit, toggleLogIn, toggleCreateAccount;
     public GameObject networkClient;
-    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView;
-    GameObject nameTextBox, passwordTextBox;
+    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, searchGameRoomButton, chatInputFieldSubmitButton;
+    GameObject nameTextBox, passwordTextBox, gameRoomNumberText;
     GameObject ticTacToeBoard,gameStatusText;
     GameObject searchGameRoomInputField;
     public Button[] ticTacToeButtonCellArray;
@@ -66,6 +66,12 @@ public class GameSystemManager : MonoBehaviour
                 chatScrollViewText = go.GetComponent<TextMeshProUGUI>();
             else if (go.name == "SearchGameRoomInputField")
                 searchGameRoomInputField = go;
+            else if (go.name == "SearchGameRoomButton")
+                searchGameRoomButton = go;
+            else if (go.name == "GameRoomNumberText")
+                gameRoomNumberText = go;
+            else if (go.name == "ChatInputFieldSubmitButton")
+                chatInputFieldSubmitButton = go;
 
 
 
@@ -78,8 +84,10 @@ public class GameSystemManager : MonoBehaviour
         findGameSessionButton.GetComponent<Button>().onClick.AddListener(FindGameSessionButtonPressed);
         mainMenuGameButton.GetComponent<Button>().onClick.AddListener(MainMenuGameButtonPressed);
         restartGameButton.GetComponent<Button>().onClick.AddListener(RestartGameButtonPressed);
-        leaderboardButton.GetComponent<Button>().onClick.AddListener(ShowLeaderboardButtonPressed); 
+        leaderboardButton.GetComponent<Button>().onClick.AddListener(ShowLeaderboardButtonPressed);
+        searchGameRoomButton.GetComponent<Button>().onClick.AddListener(SearchGameRoomButtonPressed);
         ticTacToeButtonCellArray = ticTacToeBoard.GetComponentsInChildren<Button>();
+        chatInputFieldSubmitButton.GetComponent<Button>().onClick.AddListener(ChatInputFieldSubmitButtonPressed);
         AddListenersToButtonCellArray();
         
         ChangeGameState(GameStates.Login);
@@ -100,7 +108,6 @@ public class GameSystemManager : MonoBehaviour
             {
                 networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
                 searchGameRoomInputField.GetComponent<TMP_InputField>().text = "";
-
             }
         }
     }
@@ -317,6 +324,10 @@ public class GameSystemManager : MonoBehaviour
         chatScrollView.SetActive(false);
         chatInputField.SetActive(false);
         searchGameRoomInputField.SetActive(false);
+        gameRoomNumberText.SetActive(false);
+        searchGameRoomButton.SetActive(false);
+        chatInputFieldSubmitButton.SetActive(false);
+
 
         if (newState == GameStates.Login)
         {
@@ -333,6 +344,8 @@ public class GameSystemManager : MonoBehaviour
             findGameSessionButton.SetActive(true);
             leaderboardButton.SetActive(true);
             searchGameRoomInputField.SetActive(true);
+            gameRoomNumberText.SetActive(true);
+            searchGameRoomButton.SetActive(true);
         }
         else if (newState == GameStates.WaitingForMatch)
         {
@@ -346,6 +359,7 @@ public class GameSystemManager : MonoBehaviour
             gameStatusText.SetActive(true);
             chatScrollView.SetActive(true);
             chatInputField.SetActive(true);
+            chatInputFieldSubmitButton.SetActive(true);
             ResetAllCellButtonTextValues();
         }
         else if (newState == GameStates.Leaderboard)
@@ -397,6 +411,24 @@ public class GameSystemManager : MonoBehaviour
     public void UpdateObserverTicTacToeBoard(int cellNumber, string symbol)
     {
         ticTacToeButtonCellArray[cellNumber].GetComponentInChildren<TextMeshProUGUI>().text = symbol;
+    }
+
+    public void SearchGameRoomButtonPressed()
+    {
+        if (searchGameRoomInputField.GetComponent<TMP_InputField>().text != "")
+        {
+            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
+            searchGameRoomInputField.GetComponent<TMP_InputField>().text = "";
+        }
+    }
+    void ChatInputFieldSubmitButtonPressed()
+    {
+        if (chatInputField.GetComponent<TMP_InputField>().text != "")
+        {
+            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
+            chatScrollViewText.text += "\n" + userName + ": " + chatInputField.GetComponent<TMP_InputField>().text;
+            chatInputField.GetComponent<TMP_InputField>().text = "";
+        }
     }
 }
 
