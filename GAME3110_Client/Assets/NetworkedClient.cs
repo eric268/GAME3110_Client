@@ -140,6 +140,8 @@ public class NetworkedClient : MonoBehaviour
             bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
+            gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
+
         }
         else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
         {
@@ -183,6 +185,39 @@ public class NetworkedClient : MonoBehaviour
             string message = "\n" + csv[1] + ": " + csv[2];
             gameSystemManager.GetComponent<GameSystemManager>().AddOpponenetMessageToChat(message);
         }
+        else if (signifier == ServertoClientSignifiers.GetCellsOfTicTacToeBoard)
+        {
+            string requesterID = csv[1];
+            string boardResults = gameSystemManager.GetComponent<GameSystemManager>().ConverCurrentTicTacToeBoardToString();
+            gameSystemManager.GetComponent<GameSystemManager>().networkClient.GetComponent<NetworkedClient>()
+                .SendMessageToHost(string.Join(",",ClientToSeverSignifiers.SendCellsOfTicTacToeBoardToServer.ToString(), requesterID, boardResults));
+        }
+        else if (signifier == ServertoClientSignifiers.SendTicTacToeCellsToObserver)
+        {
+            string boardResults = csv[1];
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayiongTicTacToe);
+            gameSystemManager.GetComponent<GameSystemManager>().PopulateObserverTicTacToeBoard(boardResults);
+
+            int i = 8;
+            for (; i >= 0; i--)
+            {
+                if (boardResults[i] != 'B')
+                    break;
+            }
+
+            string symbol = (boardResults[i] == 'X') ? "O" : "X";
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
+        }
+        else if (signifier == ServertoClientSignifiers.UpdateObserverOnMoveMade)
+        {
+            int cellNumber = int.Parse(csv[1]);
+            string symbol = csv[2];
+            symbol = (csv[2] == "X") ? "O" : "X";
+
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTicTacToeBoard(cellNumber, symbol);
+            gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
+        }
+
     }
 
     public bool IsConnected()
@@ -204,6 +239,8 @@ public static class ClientToSeverSignifiers
     public const int RestartGame = 8;
     public const int ShowLeaderboard = 9;
     public const int PlayerSentMessageInChat = 10;
+    public const int SearchGameRoomRequestMade = 11;
+    public const int SendCellsOfTicTacToeBoardToServer = 12;
 }
 
 public static class ServertoClientSignifiers
@@ -217,6 +254,10 @@ public static class ServertoClientSignifiers
     public const int OpponentRestartedGame = 7;
     public const int LeaderboardShowRequest = 8;
     public const int SendPlayerChatToOpponent = 9;
+    public const int SearchFoundValidGameRoom = 10;
+    public const int GetCellsOfTicTacToeBoard = 11;
+    public const int SendTicTacToeCellsToObserver = 12;
+    public const int UpdateObserverOnMoveMade = 13;
 }
 
 public static class LoginResponse

@@ -8,14 +8,16 @@ using UnityEngine;
 public class GameSystemManager : MonoBehaviour
 {
     GameObject inputFieldUsername, inputFieldPassword, chatInputField, buttonSubmit, toggleLogIn, toggleCreateAccount;
-    GameObject networkClient;
+    public GameObject networkClient;
     GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView;
     GameObject nameTextBox, passwordTextBox;
     GameObject ticTacToeBoard,gameStatusText;
+    GameObject searchGameRoomInputField;
     public Button[] ticTacToeButtonCellArray;
     string playersTicTacToeSymbol,opponentsTicTacToeSymbol;
-    public bool myTurnToMove;
+    public bool myTurnToMove = false;
     int numberOfTotalMovesMade = 0;
+    public int gameSessionID;
     public string userName;
     public TextMeshProUGUI chatScrollViewText;
     // Start is called before the first frame update
@@ -59,13 +61,14 @@ public class GameSystemManager : MonoBehaviour
             else if (go.name == "ChatScrollView")
                 chatScrollView = go;
             else if (go.name == "ChatInputField")
-            {
                 chatInputField = go;
-            }
             else if (go.name == "ChatScrollViewText")
-            {
                 chatScrollViewText = go.GetComponent<TextMeshProUGUI>();
-            }
+            else if (go.name == "SearchGameRoomInputField")
+                searchGameRoomInputField = go;
+
+
+
         }
 
         buttonSubmit.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
@@ -92,6 +95,12 @@ public class GameSystemManager : MonoBehaviour
                 networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",",ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
                 chatScrollViewText.text += "\n" + userName + ": " + chatInputField.GetComponent<TMP_InputField>().text;
                 chatInputField.GetComponent<TMP_InputField>().text = "";
+            }
+            if (searchGameRoomInputField.GetComponent<TMP_InputField>().text != "")
+            {
+                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
+                searchGameRoomInputField.GetComponent<TMP_InputField>().text = "";
+
             }
         }
     }
@@ -134,7 +143,7 @@ public class GameSystemManager : MonoBehaviour
                 myTurnToMove = false;
                 UpdatePlayersCurrentTurnText(myTurnToMove);
                 buttonText.text = playersTicTacToeSymbol;
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToeMoveMade + "," + i);
+                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToeMoveMade + "," + i + "," + playersTicTacToeSymbol);
                 if (CheckIfGameOver())
                 {
                     Debug.Log("Printing Symbols");
@@ -187,6 +196,11 @@ public class GameSystemManager : MonoBehaviour
     public void UpdatePlayersCurrentTurnText(bool myTurn)
     {
         gameStatusText.GetComponent<TextMeshProUGUI>().text = (myTurn == true) ? "Your Move" : "Opponents Move";
+    }
+
+    public void UpdateObserverTurnDisplay(string symbol)
+    {
+        gameStatusText.GetComponent<TextMeshProUGUI>().text ="OBSERVER    " + symbol + " Turn";
     }
 
     private void ResetAllCellButtonTextValues()
@@ -302,6 +316,7 @@ public class GameSystemManager : MonoBehaviour
         leaderboardWinsText.SetActive(false);
         chatScrollView.SetActive(false);
         chatInputField.SetActive(false);
+        searchGameRoomInputField.SetActive(false);
 
         if (newState == GameStates.Login)
         {
@@ -317,6 +332,7 @@ public class GameSystemManager : MonoBehaviour
         {
             findGameSessionButton.SetActive(true);
             leaderboardButton.SetActive(true);
+            searchGameRoomInputField.SetActive(true);
         }
         else if (newState == GameStates.WaitingForMatch)
         {
@@ -340,10 +356,48 @@ public class GameSystemManager : MonoBehaviour
             leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\tLeaderboard\n\n";
             leaderboardWinsText.GetComponent<TextMeshProUGUI>().text = "\n\n";
             networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
-
         }
     }
 
+    public string ConverCurrentTicTacToeBoardToString()
+    {
+        string ans = "";
+
+        for (int i = 0; i < ticTacToeButtonCellArray.Length; i++)
+        {
+            if (ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text == "")
+            {
+                ans += "B";
+
+            }
+            else
+                ans += ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text;
+        }
+        return ans;
+    }
+
+    public void PopulateObserverTicTacToeBoard(string boardResult)
+    {
+        for(int i = 0; i < ticTacToeButtonCellArray.Length; i++)
+        {
+            if (boardResult[i] == 'X')
+            {
+                ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text = "X";
+            }
+            else if (boardResult[i] == 'O')
+            {
+                ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text = "O";
+            }
+            else if (boardResult[i] == 'B')
+            {
+                //Don't want to do anything here B is used to show a cell was blank
+            }
+        }
+    }
+    public void UpdateObserverTicTacToeBoard(int cellNumber, string symbol)
+    {
+        ticTacToeButtonCellArray[cellNumber].GetComponentInChildren<TextMeshProUGUI>().text = symbol;
+    }
 }
 
 public static class GameStates
