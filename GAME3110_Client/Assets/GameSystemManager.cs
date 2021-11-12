@@ -18,7 +18,7 @@ public class GameSystemManager : MonoBehaviour
     //Buttons
     GameObject findGameSessionButton, mainMenuGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, searchGameRoomButton, 
         chatInputFieldSubmitButton, replayDropDownButton, quitGameButton, buttonSubmit, clearReplayDropDownButton, leaveGameQueueButton, replayPlayButton,
-        replayPauseButton, replayRestartButton;
+        replayPauseButton, replayRestartButton, leaderboardMainMenuButton;
     
     //Text boxes
     GameObject nameTextBox, passwordTextBox, gameRoomNumberText, replayDropDownText, errorMessageText, gameStatusText;
@@ -108,7 +108,8 @@ public class GameSystemManager : MonoBehaviour
                 replayPauseButton = go;
             else if (go.name == "ReplayRestartButton")
                 replayRestartButton = go;
-
+            else if (go.name == "LeaderboardMainMenuButton")
+                leaderboardMainMenuButton = go;
 
         }
 
@@ -129,8 +130,7 @@ public class GameSystemManager : MonoBehaviour
         replayPlayButton.GetComponent<Button>().onClick.AddListener(PlayReplayButtonPressed);
         replayPauseButton.GetComponent<Button>().onClick.AddListener(PauseReplayButtonPressed);
         replayRestartButton.GetComponent<Button>().onClick.AddListener(RestartReplayButtonPressed);
-
-
+        leaderboardMainMenuButton.GetComponent<Button>().onClick.AddListener(MainMenuGameButtonPressed);
         errorMessageText.GetComponent<TextMeshProUGUI>().text = "";
         AddListenersToButtonCellArray();
         ChangeGameState(GameStates.Login);
@@ -442,7 +442,9 @@ public class GameSystemManager : MonoBehaviour
     void ReplayDropDownButtonPressed()
     {
         int menuIndex = replayDropDown.GetComponent<TMP_Dropdown>().value;
+        Debug.Log(replayDropDown.GetComponent<TMP_Dropdown>().options[menuIndex].text);
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer,userName, menuIndex));
+        replayDropDown.GetComponent<TMP_Dropdown>().RefreshShownValue();
     }
 
     public void OpponentMadeMove(int cellNumberOfMovePlayed)
@@ -558,7 +560,7 @@ public class GameSystemManager : MonoBehaviour
             recordingSlot.text = "Recording " + (i + 1);
             replayDropDown.GetComponent<TMP_Dropdown>().options.Add(recordingSlot);
         }
-        
+        replayDropDown.GetComponent<TMP_Dropdown>().RefreshShownValue();
     }
     public void PauseReplayButtonPressed()
     {
@@ -659,7 +661,7 @@ public class GameSystemManager : MonoBehaviour
         leaveGameQueueButton.SetActive(false);
         errorMessageText.SetActive(false);
         quitGameButton.SetActive(false);
-
+        leaderboardMainMenuButton.SetActive(false);
         replayPlayButton.SetActive(false);
         replayPauseButton.SetActive(false);
         replayRestartButton.SetActive(false);
@@ -716,10 +718,10 @@ public class GameSystemManager : MonoBehaviour
         }
         else if (newState == GameStates.Leaderboard)
         {
-            mainMenuGameButton.SetActive(true);
+            leaderboardMainMenuButton.SetActive(true);
             leaderboardNamesText.SetActive(true);
             leaderboardWinsText.SetActive(true);
-            leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\tLeaderboard\n\n";
+            leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\t  Leaderboard\n\n";
             leaderboardWinsText.GetComponent<TextMeshProUGUI>().text = "\n\n";
             networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
         }

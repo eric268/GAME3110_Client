@@ -242,9 +242,7 @@ public class NetworkedClient : MonoBehaviour
         else if (signifier == ServertoClientSignifiers.GameSessionSearchResponse)
         {
             Debug.Log("Game room search results");
-            if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchSucceeded)
-                Debug.Log("Room Found");
-            else if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchFailed)
+            if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchFailed)
                 gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Game Room Not Found");
         }
     }
