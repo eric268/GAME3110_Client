@@ -123,11 +123,27 @@ public class NetworkedClient : MonoBehaviour
         {
             int loginResultSignifier = int.Parse(csv[1]);
 
+            Debug.Log("Login Result: " + loginResultSignifier);
             if (loginResultSignifier == LoginResponse.Success)
             {
                 gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
                 gameSystemManager.GetComponent<GameSystemManager>().userName = csv[2];
                 gameSystemManager.GetComponent<GameSystemManager>().GetNumberOfSavedRecordingsFromServer();
+            }
+            else if (loginResultSignifier == LoginResponse.FailureNameInUse)
+            {
+                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Failed: Username in use");
+                gameSystemManager.GetComponent<GameSystemManager>().UpdateLogInInputFields(true, true);
+            }
+            else if (loginResultSignifier == LoginResponse.FailureNameNotFound)
+            {
+                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Failed: Username not found");
+                gameSystemManager.GetComponent<GameSystemManager>().UpdateLogInInputFields(true, true);
+            }
+            else if (loginResultSignifier == LoginResponse.FailureIncorrectPassword)
+            {
+                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Failed: Incorrect Password");
+                gameSystemManager.GetComponent<GameSystemManager>().UpdateLogInInputFields(false, true);
             }
 
         }
@@ -223,6 +239,14 @@ public class NetworkedClient : MonoBehaviour
             int numberOfRecordings = int.Parse(csv[1]);
             gameSystemManager.GetComponent<GameSystemManager>().UpdateRecordingDropdownMenu(numberOfRecordings);
         }
+        else if (signifier == ServertoClientSignifiers.GameSessionSearchResponse)
+        {
+            Debug.Log("Game room search results");
+            if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchSucceeded)
+                Debug.Log("Room Found");
+            else if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchFailed)
+                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Game Room Not Found");
+        }
     }
 
     public bool IsConnected()
@@ -272,6 +296,7 @@ public static class ServertoClientSignifiers
     public const int RecordingSentToClient = 14;
     public const int SendNumberOfSavedRecordings = 15;
     public const int ReloadDropDownMenu = 16;
+    public const int GameSessionSearchResponse = 17;
 }
 
 public static class LoginResponse

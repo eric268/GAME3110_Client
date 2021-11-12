@@ -7,23 +7,37 @@ using UnityEngine;
 
 public class GameSystemManager : MonoBehaviour
 {
-    GameObject inputFieldUsername, inputFieldPassword, chatInputField, buttonSubmit, toggleLogIn, toggleCreateAccount;
-    GameObject replayDropDown;
     public GameObject networkClient;
-    GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, searchGameRoomButton, chatInputFieldSubmitButton, replayDropDownButton;
-    GameObject nameTextBox, passwordTextBox, gameRoomNumberText, replayDropDownText;
-    GameObject ticTacToeBoard,gameStatusText, clearReplayDropDownButton, leaveGameQueueButton;
-    GameObject searchGameRoomInputField;
+
+    //Toggles
+    GameObject toggleLogIn, toggleCreateAccount;
+
+    //Input Fields
+    GameObject inputFieldUsername, inputFieldPassword, chatInputField, searchGameRoomInputField;
+
+    //Buttons
+    GameObject findGameSessionButton, mainMenuGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, searchGameRoomButton, 
+        chatInputFieldSubmitButton, replayDropDownButton, quitGameButton, buttonSubmit, clearReplayDropDownButton, leaveGameQueueButton, replayPlayButton,
+        replayPauseButton, replayRestartButton;
+    
+    //Text boxes
+    GameObject nameTextBox, passwordTextBox, gameRoomNumberText, replayDropDownText, errorMessageText, gameStatusText;
+
+    GameObject replayDropDown, ticTacToeBoard;
     public ReplayRecorder replayRecorder;
     public Button[] ticTacToeButtonCellArray;
-    string playersTicTacToeSymbol,opponentsTicTacToeSymbol, currentReplaySymbol;
-    public bool myTurnToMove = false, isWatchingReplay, recordingIsPaused = false;
-    public bool opponentsTurn = false, gameStarted = false;
-    float playerTurnCounter = 0.0f, opponentTurnCounter = 0.0f, replayRecordingCounter = 0.0f;
-    int numberOfTotalMovesMade = 0;
-    public int gameSessionID;
-    public string userName;
     public TextMeshProUGUI chatScrollViewText;
+
+    string playersTicTacToeSymbol,opponentsTicTacToeSymbol, currentReplaySymbol;
+    public string userName;
+
+    public bool myTurnToMove = false, isWatchingReplay, recordingIsPaused = false, displayErrorScreenMessage = false, opponentsTurn = false, gameStarted = false;
+
+    float playerTurnCounter = 0.0f, opponentTurnCounter = 0.0f, replayRecordingCounter = 0.0f, errorMessageTimer = 2.5f, errorMessageCounter = 0.0f;
+    int numberOfTotalMovesMade = 0;
+
+    public int gameSessionID;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -54,8 +68,6 @@ public class GameSystemManager : MonoBehaviour
                 ticTacToeBoard = go;
             else if (go.name == "GameStatusText")
                 gameStatusText = go;
-            else if (go.name == "RestartGameButton")
-                restartGameButton = go;
             else if (go.name == "LeaderboardButton")
                 leaderboardButton = go;
             else if (go.name == "LeaderboardNamesText")
@@ -86,7 +98,16 @@ public class GameSystemManager : MonoBehaviour
                 clearReplayDropDownButton = go;
             else if (go.name == "LeaveGameQueueButton")
                 leaveGameQueueButton = go;
-
+            else if (go.name == "ErrorMessageText")
+                errorMessageText = go;
+            else if (go.name == "QuitGameButton")
+                quitGameButton = go;
+            else if (go.name == "ReplayPlayButton")
+                replayPlayButton = go;
+            else if (go.name == "ReplayPauseButton")
+                replayPauseButton = go;
+            else if (go.name == "ReplayRestartButton")
+                replayRestartButton = go;
 
 
         }
@@ -97,7 +118,6 @@ public class GameSystemManager : MonoBehaviour
 
         findGameSessionButton.GetComponent<Button>().onClick.AddListener(FindGameSessionButtonPressed);
         mainMenuGameButton.GetComponent<Button>().onClick.AddListener(MainMenuGameButtonPressed);
-        restartGameButton.GetComponent<Button>().onClick.AddListener(RestartGameButtonPressed);
         leaderboardButton.GetComponent<Button>().onClick.AddListener(ShowLeaderboardButtonPressed);
         searchGameRoomButton.GetComponent<Button>().onClick.AddListener(SearchGameRoomButtonPressed);
         ticTacToeButtonCellArray = ticTacToeBoard.GetComponentsInChildren<Button>();
@@ -105,14 +125,25 @@ public class GameSystemManager : MonoBehaviour
         replayDropDownButton.GetComponent<Button>().onClick.AddListener(ReplayDropDownButtonPressed);
         clearReplayDropDownButton.GetComponent<Button>().onClick.AddListener(ClearReplayDropDownButtonPressed);
         leaveGameQueueButton.GetComponent<Button>().onClick.AddListener(LeaveGameQueueButtonPressed);
+        quitGameButton.GetComponent<Button>().onClick.AddListener(QuitGameButtonPressed);
+        replayPlayButton.GetComponent<Button>().onClick.AddListener(PlayReplayButtonPressed);
+        replayPauseButton.GetComponent<Button>().onClick.AddListener(PauseReplayButtonPressed);
+        replayRestartButton.GetComponent<Button>().onClick.AddListener(RestartReplayButtonPressed);
+
+
+        errorMessageText.GetComponent<TextMeshProUGUI>().text = "";
         AddListenersToButtonCellArray();
-        
         ChangeGameState(GameStates.Login);
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (displayErrorScreenMessage)
+        {
+            DisplayErrorMessage();
+        }
+
         if (isWatchingReplay && !recordingIsPaused)
         {
             UpdateTicTacToeRecording();
@@ -156,6 +187,8 @@ public class GameSystemManager : MonoBehaviour
 
     public void SubmitButtonPressed()
     {
+        Debug.Log("Submit Button Pressed");
+
         string n = inputFieldUsername.GetComponent<InputField>().text;
         string p = inputFieldPassword.GetComponent<InputField>().text;
 
@@ -259,7 +292,7 @@ public class GameSystemManager : MonoBehaviour
 
     public void UpdateObserverTurnDisplay(string symbol)
     {
-        gameStatusText.GetComponent<TextMeshProUGUI>().text ="OBSERVER    " + symbol + " Turn";
+        gameStatusText.GetComponent<TextMeshProUGUI>().text ="OBSERVER";
     }
 
     private void ResetAllCellButtonTextValues()
@@ -279,7 +312,6 @@ public class GameSystemManager : MonoBehaviour
             {
                 gameStatusText.GetComponent<TextMeshProUGUI>().text = userName + " Won!";
                 networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString() + "," + userName);
-                restartGameButton.SetActive(true);
                 GameOver();
                 return true;
             }
@@ -287,7 +319,6 @@ public class GameSystemManager : MonoBehaviour
             {
                 gameStatusText.GetComponent<TextMeshProUGUI>().text = "Game Drawn";
                 networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameDrawn.ToString());
-                restartGameButton.SetActive(true);
                 GameOver();
                 return true;
             }
@@ -333,12 +364,6 @@ public class GameSystemManager : MonoBehaviour
     public void UpdateGameStatusText(string gameText)
     {
         gameStatusText.GetComponent<TextMeshProUGUI>().text = gameText;
-    }
-
-    public void RestartGameButtonPressed()
-    {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.RestartGame.ToString());
-        ChangeGameState(GameStates.PlayingTicTacToe);
     }
 
     void ShowLeaderboardButtonPressed()
@@ -416,33 +441,8 @@ public class GameSystemManager : MonoBehaviour
     }
     void ReplayDropDownButtonPressed()
     {
-        //Change to game play scene
-        //Load in array containing 
-            //First player's turn symbol
-            //Time between turns
-            //Cell number of turn
-
-        //How to get index of selection
         int menuIndex = replayDropDown.GetComponent<TMP_Dropdown>().value;
-
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer,userName, menuIndex));
-
-        //Index replay 
-
-        //List<TMP_Dropdown.OptionData> menuOptions = replayDropDown.GetComponent<TMP_Dropdown>().options;
-
-        ////Gives a list of existing options
-
-        //foreach (TMP_Dropdown.OptionData m in menuOptions)
-        //    Debug.Log(m.text);
-        
-        //TMP_Dropdown.OptionData add = new TMP_Dropdown.OptionData();
-        //add.text = "Eric's addition";
-        //menuOptions.Add(add);
-        //replayDropDown.GetComponent<TMP_Dropdown>().options = menuOptions;
-        //Clear drop downs do this on start
-        //List<TMP_Dropdown.OptionData> clearOptions = new List<TMP_Dropdown.OptionData>();
-        //replayDropDown.GetComponent<TMP_Dropdown>().options = clearOptions;
     }
 
     public void OpponentMadeMove(int cellNumberOfMovePlayed)
@@ -503,7 +503,10 @@ public class GameSystemManager : MonoBehaviour
         isWatchingReplay = true;
         ReplayRecorder.turnNumber = 0;
         currentReplaySymbol = replayRecorder.startingSymbol;
-        gameStatusText.GetComponent<TextMeshProUGUI>().text = "  Replay\n" + currentReplaySymbol + " Turn";
+        gameStatusText.GetComponent<TextMeshProUGUI>().text ="Replay";
+        replayPlayButton.SetActive(true);
+        replayPauseButton.SetActive(true);
+        replayRestartButton.SetActive(true);
     }
 
     void UpdateTicTacToeRecording()
@@ -520,14 +523,14 @@ public class GameSystemManager : MonoBehaviour
             {
                 ticTacToeButtonCellArray[cellToChange].GetComponentInChildren<TextMeshProUGUI>().text = replayRecorder.startingSymbol;
                 currentReplaySymbol = (replayRecorder.startingSymbol == "X") ? "O" : "X";
-                gameStatusText.GetComponent<TextMeshProUGUI>().text = "  Replay\n" + currentReplaySymbol + " Turn";
+                gameStatusText.GetComponent<TextMeshProUGUI>().text = "Replay";
             }
             else
             {
                 string otherSymbol = (replayRecorder.startingSymbol == "X") ? "O" : "X";
                 ticTacToeButtonCellArray[cellToChange].GetComponentInChildren<TextMeshProUGUI>().text = otherSymbol;
                 currentReplaySymbol = replayRecorder.startingSymbol;
-                gameStatusText.GetComponent<TextMeshProUGUI>().text = "  Replay\n" + currentReplaySymbol + " Turn";
+                gameStatusText.GetComponent<TextMeshProUGUI>().text = "Replay";
             }
             replayRecordingCounter = 0.0f;
             ReplayRecorder.turnNumber++;
@@ -565,14 +568,20 @@ public class GameSystemManager : MonoBehaviour
     {
         recordingIsPaused = false;
     }
+
     public void RestartReplayButtonPressed()
     {
-        replayRecordingCounter = 0.0f;
         ReplayRecorder.turnNumber = 0;
+        replayRecordingCounter = 0;
+        isWatchingReplay = true;
         recordingIsPaused = false;
         for (int i = 0; i < 9; i++)
+        {
             ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text = "";
+        }
     }
+
+
     void ClearReplayDropDownButtonPressed()
     {
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.ClearRecordingOnServer, userName));
@@ -582,6 +591,43 @@ public class GameSystemManager : MonoBehaviour
     {
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.PlayerHasLeftGameQueue));
         ChangeGameState(GameStates.MainMenu);
+    }
+
+    public void SetErrorDisplayMessage(string message)
+    {
+        displayErrorScreenMessage = true;
+        errorMessageText.GetComponent<TextMeshProUGUI>().text = message;
+        errorMessageText.SetActive(true);
+    }
+
+    void DisplayErrorMessage()
+    {
+        errorMessageCounter += Time.deltaTime;
+        if (errorMessageTimer <= errorMessageCounter)
+        {
+            errorMessageCounter = 0.0f;
+            errorMessageText.GetComponent<TextMeshProUGUI>().text = "";
+            displayErrorScreenMessage = false;
+            errorMessageText.SetActive(false);
+        }
+    }
+
+    public void UpdateLogInInputFields(bool resetUsernameField, bool resetPasswordField)
+    {
+        if (resetUsernameField)
+            inputFieldUsername.GetComponent<InputField>().text = "";
+
+        if (resetPasswordField)
+            inputFieldPassword.GetComponent<InputField>().text = "";
+    }
+
+    void QuitGameButtonPressed()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+      Application.Quit();
+#endif
     }
 
     public void ChangeGameState(int newState)
@@ -598,7 +644,6 @@ public class GameSystemManager : MonoBehaviour
         passwordTextBox.SetActive(false);
         ticTacToeBoard.SetActive(false);
         gameStatusText.SetActive(false);
-        restartGameButton.SetActive(false);
         leaderboardButton.SetActive(false);
         leaderboardNamesText.SetActive(false);
         leaderboardWinsText.SetActive(false);
@@ -612,6 +657,12 @@ public class GameSystemManager : MonoBehaviour
         replayDropDownButton.SetActive(false);
         replayDropDownText.SetActive(false);
         leaveGameQueueButton.SetActive(false);
+        errorMessageText.SetActive(false);
+        quitGameButton.SetActive(false);
+
+        replayPlayButton.SetActive(false);
+        replayPauseButton.SetActive(false);
+        replayRestartButton.SetActive(false);
 
         ReplayRecorder.turnNumber = 0;
         opponentTurnCounter = 0.0f;
@@ -637,6 +688,7 @@ public class GameSystemManager : MonoBehaviour
             searchGameRoomInputField.SetActive(true);
             gameRoomNumberText.SetActive(true);
             searchGameRoomButton.SetActive(true);
+            quitGameButton.SetActive(true);
             //Drop Down UI
             replayDropDown.SetActive(true);
             replayDropDownButton.SetActive(true);
