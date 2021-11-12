@@ -150,13 +150,12 @@ public class NetworkedClient : MonoBehaviour
         else if (signifier == ServertoClientSignifiers.GameSessionStarted)
         {
             gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
-
             opponentsSymbol = (csv[1] == "X") ? "O" : "X";
             bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
             gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
+   
         }
         else if (signifier == ServertoClientSignifiers.OpponentPlayedAMove)
         {
@@ -232,6 +231,7 @@ public class NetworkedClient : MonoBehaviour
         }
         else if (signifier == ServertoClientSignifiers.RecordingSentToClient)
         {
+            Debug.Log("Recording info: " + msg);
             gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording(msg);
         }
         else if (signifier == ServertoClientSignifiers.SendNumberOfSavedRecordings)
