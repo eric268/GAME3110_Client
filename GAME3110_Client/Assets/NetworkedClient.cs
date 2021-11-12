@@ -129,6 +129,7 @@ public class NetworkedClient : MonoBehaviour
             {
                 gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
                 gameSystemManager.GetComponent<GameSystemManager>().userName = csv[2];
+                gameSystemManager.GetComponent<GameSystemManager>().GetNumberOfSavedRecordingsFromServer();
             }
 
         }
@@ -141,7 +142,6 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
             gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
-            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.gameID = int.Parse(csv[3]);
 
         }
         else if (signifier == ServertoClientSignifiers.OpponentTicTacToePlay)
@@ -160,11 +160,13 @@ public class NetworkedClient : MonoBehaviour
         {
             gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText(csv[1] + " Won!");
             gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
+            gameSystemManager.GetComponent<GameSystemManager>().GameOver();
         }
         else if (signifier == ServertoClientSignifiers.GameDrawn)
         {
             gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText("Game Drawn");
             gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
+            gameSystemManager.GetComponent<GameSystemManager>().GameOver();
         }
         else if (signifier == ServertoClientSignifiers.OpponentRestartedGame)
         {
@@ -220,7 +222,7 @@ public class NetworkedClient : MonoBehaviour
         }
         else if (signifier == ServertoClientSignifiers.RecordingSentToClient)
         {
-            gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording(csv[1]);
+            gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording(msg);
         }
         else if (signifier == ServertoClientSignifiers.SendNumberOfSavedRecordings)
         {
@@ -253,6 +255,7 @@ public static class ClientToSeverSignifiers
     public const int RecordingSentToServer = 13;
     public const int RecordingRequestedFromServer = 14;
     public const int RequestNumberOfSavedRecordings = 15;
+    public const int ClearRecordingOnServer = 16;
 }
 
 public static class ServertoClientSignifiers
@@ -272,6 +275,7 @@ public static class ServertoClientSignifiers
     public const int UpdateObserverOnMoveMade = 13;
     public const int RecordingSentToClient = 14;
     public const int SendNumberOfSavedRecordings = 15;
+    public const int ReloadDropDownMenu = 16;
 }
 
 public static class LoginResponse

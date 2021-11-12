@@ -12,14 +12,14 @@ public class GameSystemManager : MonoBehaviour
     public GameObject networkClient;
     GameObject findGameSessionButton, mainMenuGameButton, restartGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, searchGameRoomButton, chatInputFieldSubmitButton, replayDropDownButton;
     GameObject nameTextBox, passwordTextBox, gameRoomNumberText, replayDropDownText;
-    GameObject ticTacToeBoard,gameStatusText;
+    GameObject ticTacToeBoard,gameStatusText, clearReplayDropDownButton;
     GameObject searchGameRoomInputField;
     public ReplayRecorder replayRecorder;
     public Button[] ticTacToeButtonCellArray;
     string playersTicTacToeSymbol,opponentsTicTacToeSymbol;
-    public bool myTurnToMove = false, isWatchingReplay;
+    public bool myTurnToMove = false, isWatchingReplay, recordingIsPaused = false;
     public bool opponentsTurn = false, gameStarted = false;
-    float playerTurnCounter = 0.0f, opponentTurnCounter = 0.0f;
+    float playerTurnCounter = 0.0f, opponentTurnCounter = 0.0f, replayRecordingCounter = 0.0f;
     int numberOfTotalMovesMade = 0;
     public int gameSessionID;
     public string userName;
@@ -82,6 +82,8 @@ public class GameSystemManager : MonoBehaviour
                 replayDropDownText = go;
             else if (go.name == "ReplayDropDownButton")
                 replayDropDownButton = go;
+            else if (go.name == "ClearReplayDropDownButton")
+                clearReplayDropDownButton = go;
 
 
 
@@ -99,6 +101,7 @@ public class GameSystemManager : MonoBehaviour
         ticTacToeButtonCellArray = ticTacToeBoard.GetComponentsInChildren<Button>();
         chatInputFieldSubmitButton.GetComponent<Button>().onClick.AddListener(ChatInputFieldSubmitButtonPressed);
         replayDropDownButton.GetComponent<Button>().onClick.AddListener(ReplayDropDownButtonPressed);
+        clearReplayDropDownButton.GetComponent<Button>().onClick.AddListener(ClearReplayDropDownButtonPressed);
         AddListenersToButtonCellArray();
         
         ChangeGameState(GameStates.Login);
@@ -107,7 +110,11 @@ public class GameSystemManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (isWatchingReplay && !recordingIsPaused)
+        {
+            UpdateTicTacToeRecording();
+        }
+
         if (Input.GetKeyDown(KeyCode.Return))
         {
             if (chatInputField.GetComponent<TMP_InputField>().text != "")
@@ -346,86 +353,6 @@ public class GameSystemManager : MonoBehaviour
         chatScrollViewText.text += message;
     }
 
-    public void ChangeGameState(int newState)
-    {
-
-        inputFieldUsername.SetActive(false);
-        inputFieldPassword.SetActive(false);
-        buttonSubmit.SetActive(false);
-        toggleLogIn.SetActive(false);
-        toggleCreateAccount.SetActive(false);
-        findGameSessionButton.SetActive(false);
-        mainMenuGameButton.SetActive(false);
-        nameTextBox.SetActive(false);
-        passwordTextBox.SetActive(false);
-        ticTacToeBoard.SetActive(false);
-        gameStatusText.SetActive(false);
-        restartGameButton.SetActive(false);
-        leaderboardButton.SetActive(false);
-        leaderboardNamesText.SetActive(false);
-        leaderboardWinsText.SetActive(false);
-        chatScrollView.SetActive(false);
-        chatInputField.SetActive(false);
-        searchGameRoomInputField.SetActive(false);
-        gameRoomNumberText.SetActive(false);
-        searchGameRoomButton.SetActive(false);
-        chatInputFieldSubmitButton.SetActive(false);
-        replayDropDown.SetActive(false);
-        replayDropDownButton.SetActive(false);
-        replayDropDownText.SetActive(false);
-        gameStarted = false;
-
-
-        if (newState == GameStates.Login)
-        {
-            inputFieldUsername.SetActive(true);
-            inputFieldPassword.SetActive(true);
-            buttonSubmit.SetActive(true);
-            toggleLogIn.SetActive(true);
-            toggleCreateAccount.SetActive(true);
-            nameTextBox.SetActive(true);
-            passwordTextBox.SetActive(true);
-        }
-        else if (newState == GameStates.MainMenu)
-        {
-            findGameSessionButton.SetActive(true);
-            leaderboardButton.SetActive(true);
-            searchGameRoomInputField.SetActive(true);
-            gameRoomNumberText.SetActive(true);
-            searchGameRoomButton.SetActive(true);
-            //Drop Down UI
-            replayDropDown.SetActive(true);
-            replayDropDownButton.SetActive(true);
-            replayDropDownText.SetActive(true);
-            GetNumberOfSavedRecordingsFromServer();
-        }
-        else if (newState == GameStates.WaitingForMatch)
-        {
-            mainMenuGameButton.SetActive(true);
-        }
-        else if (newState == GameStates.PlayiongTicTacToe)
-        {
-            numberOfTotalMovesMade = 0;
-            mainMenuGameButton.SetActive(true);
-            ticTacToeBoard.SetActive(true);
-            gameStatusText.SetActive(true);
-            chatScrollView.SetActive(true);
-            chatInputField.SetActive(true);
-            chatInputFieldSubmitButton.SetActive(true);
-            ResetAllCellButtonTextValues();
-            replayRecorder = new ReplayRecorder();
-        }
-        else if (newState == GameStates.Leaderboard)
-        {
-            mainMenuGameButton.SetActive(true);
-            leaderboardNamesText.SetActive(true);
-            leaderboardWinsText.SetActive(true);
-            leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\tLeaderboard\n\n";
-            leaderboardWinsText.GetComponent<TextMeshProUGUI>().text = "\n\n";
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
-        }
-    }
-
     public string ConverCurrentTicTacToeBoardToString()
     {
         string ans = "";
@@ -494,7 +421,7 @@ public class GameSystemManager : MonoBehaviour
         //How to get index of selection
         int menuIndex = replayDropDown.GetComponent<TMP_Dropdown>().value;
 
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer, menuIndex));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer,userName, menuIndex));
 
         //Index replay 
 
@@ -523,18 +450,18 @@ public class GameSystemManager : MonoBehaviour
         ReplayRecorder.turnNumber++;
     }
 
-    void GameOver()
+    public void GameOver()
     {
         gameStarted = false;
         replayRecorder.numberOfTurns = ReplayRecorder.turnNumber;
-
+        replayRecorder.username = userName;
         //Send info to the server
-        SendInformationToServer();
+        SendRecordingToServer();
     }
 
-    void SendInformationToServer()
+    void SendRecordingToServer()
     {
-        string recordingPacket = string.Join(",", replayRecorder.gameID, replayRecorder.startingSymbol, replayRecorder.numberOfTurns);
+        string recordingPacket = string.Join(",", replayRecorder.username, replayRecorder.startingSymbol, replayRecorder.numberOfTurns);
         for (int i = 0; i < replayRecorder.numberOfTurns; i++)
         {
             recordingPacket += "," + replayRecorder.timeBetweenTurnsArray[i];
@@ -544,46 +471,69 @@ public class GameSystemManager : MonoBehaviour
             recordingPacket += "," + replayRecorder.cellNumberOfTurn[i];
         }
         Debug.Log(recordingPacket);
-
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingSentToServer, recordingPacket));
     }
 
     public void LoadAndBeginRecording(string recordingInfo)
     {
+
         string[] csv = recordingInfo.Split(',');
+        //CSV 0 is the signifier so start at 1
 
         ChangeGameState(GameStates.PlayiongTicTacToe);
-
-        replayRecorder.gameID =int.Parse(csv[1]);
+        replayRecorder.username = (csv[1]);
         replayRecorder.startingSymbol = csv[2];
-        replayRecorder.numberOfTurns =int.Parse(csv[3]);
+        replayRecorder.numberOfTurns = int.Parse(csv[3]);
+
+        //There are numberOfTurns iterations for both time and cell location so need to double it
+        int positionalCounter = 0;
         for (int i = 4; i < replayRecorder.numberOfTurns + 4; i++)
         {
-            replayRecorder.timeBetweenTurnsArray[i] = int.Parse(csv[i]);
+            replayRecorder.timeBetweenTurnsArray[positionalCounter++] = float.Parse(csv[i]);
         }
+        positionalCounter = 0;
         for (int i = replayRecorder.numberOfTurns + 4; i < (2* replayRecorder.numberOfTurns) + 4; i++)
         {
-            replayRecorder.cellNumberOfTurn[i] =int.Parse(csv[i]);
+            replayRecorder.cellNumberOfTurn[positionalCounter++] =int.Parse(csv[i]);
         }
-
-        Debug.Log("Recording Loaded on client");
-        Debug.Log("Game ID : " + replayRecorder.gameID);
-        Debug.Log("Number of Turns: " + replayRecorder.numberOfTurns);
-        for (int i = 0; i < replayRecorder.numberOfTurns; i++)
-        {
-            Debug.Log("Turn Number: " + i + " Time: " + replayRecorder.timeBetweenTurnsArray[i] + " Cell: " + replayRecorder.cellNumberOfTurn[i]);
-        }
-
+        isWatchingReplay = true;
+        ReplayRecorder.turnNumber = 0;
     }
 
-    void GetNumberOfSavedRecordingsFromServer()
+    void UpdateTicTacToeRecording()
     {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RequestNumberOfSavedRecordings));
+        //Debug.Log("Start replay");
+        //Debug.Log("Counter: " + replayRecordingCounter);
+        replayRecordingCounter += Time.deltaTime;
+
+        if (replayRecordingCounter >= replayRecorder.timeBetweenTurnsArray[ReplayRecorder.turnNumber])
+        {
+            int cellToChange = replayRecorder.cellNumberOfTurn[ReplayRecorder.turnNumber];
+            if (ReplayRecorder.turnNumber % 2 == 0)
+                ticTacToeButtonCellArray[cellToChange].GetComponentInChildren<TextMeshProUGUI>().text = replayRecorder.startingSymbol;
+            else
+            {
+                string otherSymbol = (replayRecorder.startingSymbol == "X") ? "O" : "X";
+                ticTacToeButtonCellArray[cellToChange].GetComponentInChildren<TextMeshProUGUI>().text = otherSymbol;
+            }
+            replayRecordingCounter = 0.0f;
+            ReplayRecorder.turnNumber++;
+
+            if (replayRecorder.numberOfTurns <= ReplayRecorder.turnNumber)
+            {
+                isWatchingReplay = false;
+            }
+        }
+    }
+
+    public void GetNumberOfSavedRecordingsFromServer()
+    {
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RequestNumberOfSavedRecordings, userName));
     }
 
     public void UpdateRecordingDropdownMenu(int numberOfSavedRecordings)
     {
-        List<TMP_Dropdown.OptionData> clearOptions = new List<TMP_Dropdown.OptionData>();
+        List <TMP_Dropdown.OptionData> clearOptions = new List<TMP_Dropdown.OptionData>();
         replayDropDown.GetComponent<TMP_Dropdown>().options = clearOptions;
 
         for (int i = 0; i < numberOfSavedRecordings; i++)
@@ -594,7 +544,115 @@ public class GameSystemManager : MonoBehaviour
         }
         
     }
+
+    public void PauseReplayButtonPressed()
+    {
+        recordingIsPaused = true;
+    }
+    public void PlayReplayButtonPressed()
+    {
+        recordingIsPaused = false;
+    }
+    public void RestartReplayButtonPressed()
+    {
+        replayRecordingCounter = 0.0f;
+        ReplayRecorder.turnNumber = 0;
+        recordingIsPaused = false;
+        for (int i = 0; i < 9; i++)
+            ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text = "";
+    }
+    void ClearReplayDropDownButtonPressed()
+    {
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.ClearRecordingOnServer, userName));
+    }
+
+    public void ChangeGameState(int newState)
+    {
+        Debug.Log("State Changed");
+        inputFieldUsername.SetActive(false);
+        inputFieldPassword.SetActive(false);
+        buttonSubmit.SetActive(false);
+        toggleLogIn.SetActive(false);
+        toggleCreateAccount.SetActive(false);
+        findGameSessionButton.SetActive(false);
+        mainMenuGameButton.SetActive(false);
+        nameTextBox.SetActive(false);
+        passwordTextBox.SetActive(false);
+        ticTacToeBoard.SetActive(false);
+        gameStatusText.SetActive(false);
+        restartGameButton.SetActive(false);
+        leaderboardButton.SetActive(false);
+        leaderboardNamesText.SetActive(false);
+        leaderboardWinsText.SetActive(false);
+        chatScrollView.SetActive(false);
+        chatInputField.SetActive(false);
+        searchGameRoomInputField.SetActive(false);
+        gameRoomNumberText.SetActive(false);
+        searchGameRoomButton.SetActive(false);
+        chatInputFieldSubmitButton.SetActive(false);
+        replayDropDown.SetActive(false);
+        replayDropDownButton.SetActive(false);
+        replayDropDownText.SetActive(false);
+
+        ReplayRecorder.turnNumber = 0;
+        opponentTurnCounter = 0.0f;
+        playerTurnCounter = 0.0f;
+        replayRecordingCounter = 0.0f;
+
+
+        if (newState == GameStates.Login)
+        {
+            inputFieldUsername.SetActive(true);
+            inputFieldPassword.SetActive(true);
+            buttonSubmit.SetActive(true);
+            toggleLogIn.SetActive(true);
+            toggleCreateAccount.SetActive(true);
+            nameTextBox.SetActive(true);
+            passwordTextBox.SetActive(true);
+        }
+        else if (newState == GameStates.MainMenu)
+        {
+            Debug.Log("Main Menu Loaded");
+            findGameSessionButton.SetActive(true);
+            leaderboardButton.SetActive(true);
+            searchGameRoomInputField.SetActive(true);
+            gameRoomNumberText.SetActive(true);
+            searchGameRoomButton.SetActive(true);
+            //Drop Down UI
+            replayDropDown.SetActive(true);
+            replayDropDownButton.SetActive(true);
+            replayDropDownText.SetActive(true);
+
+            GetNumberOfSavedRecordingsFromServer();
+        }
+        else if (newState == GameStates.WaitingForMatch)
+        {
+            mainMenuGameButton.SetActive(true);
+        }
+        else if (newState == GameStates.PlayiongTicTacToe)
+        {
+            numberOfTotalMovesMade = 0;
+            mainMenuGameButton.SetActive(true);
+            ticTacToeBoard.SetActive(true);
+            gameStatusText.SetActive(true);
+            chatScrollView.SetActive(true);
+            chatInputField.SetActive(true);
+            chatInputFieldSubmitButton.SetActive(true);
+            ResetAllCellButtonTextValues();
+            replayRecorder = new ReplayRecorder();
+        }
+        else if (newState == GameStates.Leaderboard)
+        {
+            mainMenuGameButton.SetActive(true);
+            leaderboardNamesText.SetActive(true);
+            leaderboardWinsText.SetActive(true);
+            leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\tLeaderboard\n\n";
+            leaderboardWinsText.GetComponent<TextMeshProUGUI>().text = "\n\n";
+            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
+        }
+    }
 }
+
 
 public static class GameStates
 {
@@ -613,7 +671,7 @@ public class ReplayRecorder
     public string startingSymbol;
     public float[] timeBetweenTurnsArray;
     public int[] cellNumberOfTurn;
-    public float gameID;
+    public string username;
 
     public ReplayRecorder()
     {
