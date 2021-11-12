@@ -509,6 +509,7 @@ public class GameSystemManager : MonoBehaviour
         replayPlayButton.SetActive(true);
         replayPauseButton.SetActive(true);
         replayRestartButton.SetActive(true);
+        chatScrollViewText.text = "";
     }
 
     void UpdateTicTacToeRecording()
@@ -577,10 +578,7 @@ public class GameSystemManager : MonoBehaviour
         replayRecordingCounter = 0;
         isWatchingReplay = true;
         recordingIsPaused = false;
-        for (int i = 0; i < 9; i++)
-        {
-            ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text = "";
-        }
+        EraseAllTicTacToeCells();
     }
 
 
@@ -621,6 +619,14 @@ public class GameSystemManager : MonoBehaviour
 
         if (resetPasswordField)
             inputFieldPassword.GetComponent<InputField>().text = "";
+    }
+
+    void EraseAllTicTacToeCells()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            ticTacToeButtonCellArray[i].GetComponentInChildren<TextMeshProUGUI>().text = "";
+        }
     }
 
     void QuitGameButtonPressed()
@@ -665,7 +671,8 @@ public class GameSystemManager : MonoBehaviour
         replayPlayButton.SetActive(false);
         replayPauseButton.SetActive(false);
         replayRestartButton.SetActive(false);
-
+        EraseAllTicTacToeCells();
+        isWatchingReplay = false;
         ReplayRecorder.turnNumber = 0;
         opponentTurnCounter = 0.0f;
         playerTurnCounter = 0.0f;
