@@ -209,14 +209,15 @@ public class NetworkedClient : MonoBehaviour
             string boardResults = csv[1];
             gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
             gameSystemManager.GetComponent<GameSystemManager>().PopulateObserverTicTacToeBoard(boardResults);
-
+            gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
+            gameSystemManager.GetComponent<GameSystemManager>().gameStatusText.GetComponent<TextMeshProUGUI>().text = "OBSERVER";
             int i = 8;
-            for (; i >= 0; i--)
+            for (; i > 0; i--)
             {
                 if (boardResults[i] != 'B')
                     break;
             }
-
+            
             string symbol = (boardResults[i] == 'X') ? "O" : "X";
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
         }

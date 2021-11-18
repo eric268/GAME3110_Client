@@ -19,9 +19,10 @@ public class GameSystemManager : MonoBehaviour
     GameObject findGameSessionButton, mainMenuGameButton, leaderboardButton, leaderboardNamesText, leaderboardWinsText, chatScrollView, searchGameRoomButton, 
         chatInputFieldSubmitButton, replayDropDownButton, quitGameButton, buttonSubmit, clearReplayDropDownButton, leaveGameQueueButton, replayPlayButton,
         replayPauseButton, replayRestartButton, leaderboardMainMenuButton;
-    
+
     //Text boxes
-    GameObject nameTextBox, passwordTextBox, gameRoomNumberText, replayDropDownText, errorMessageText, gameStatusText;
+    GameObject nameTextBox, passwordTextBox, gameRoomNumberText, replayDropDownText, errorMessageText;
+    public GameObject gameStatusText;
 
     GameObject replayDropDown, ticTacToeBoard;
     public ReplayRecorder replayRecorder;
