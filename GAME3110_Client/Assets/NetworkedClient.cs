@@ -4,6 +4,7 @@ using System.Text;
 using UnityEngine;
 using TMPro;
 using UnityEngine.Networking;
+using System.Linq;
 
 public class NetworkedClient : MonoBehaviour
 {
@@ -117,7 +118,7 @@ public class NetworkedClient : MonoBehaviour
     private void ProcessRecievedMsg(string msg, int id)
     {
         Debug.Log("msg received = " + msg + ".  connection id = " + id);
-        string[] csv = msg.Split(',');
+        List<string> csv = msg.Split(',').ToList();
         int signifier = int.Parse(csv[0]);
         if (signifier == ServertoClientSignifiers.LoginResponse)
         {
@@ -126,9 +127,8 @@ public class NetworkedClient : MonoBehaviour
             Debug.Log("Login Result: " + loginResultSignifier);
             if (loginResultSignifier == LoginResponse.Success)
             {
-                gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
                 gameSystemManager.GetComponent<GameSystemManager>().userName = csv[2];
-                gameSystemManager.GetComponent<GameSystemManager>().GetNumberOfSavedRecordingsFromServer();
+                gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
             }
             else if (loginResultSignifier == LoginResponse.FailureNameInUse)
             {
@@ -230,7 +230,7 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTicTacToeBoard(cellNumber, symbol);
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
         }
-        else if (signifier == ServertoClientSignifiers.RecordingSentToClient)
+        else if (signifier == ServertoClientSignifiers.RecordingStartingToBeSentToClient)
         {
             Debug.Log("Recording info: " + msg);
             gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording(msg);
@@ -269,12 +269,26 @@ public static class ClientToSeverSignifiers
     public const int PlayerSentMessageInChat = 10;
     public const int SearchGameRoomRequestMade = 11;
     public const int SendCellsOfTicTacToeBoardToServer = 12;
-    public const int RecordingSentToServer = 13;
-    public const int RecordingRequestedFromServer = 14;
-    public const int RequestNumberOfSavedRecordings = 15;
-    public const int ClearRecordingOnServer = 16;
-    public const int PlayerLeftGameRoom = 17;
-    public const int PlayerHasLeftGameQueue = 18;
+
+    public const int RequestNumberOfSavedRecordings = 13;
+    public const int ClearRecordingOnServer = 14;
+    public const int PlayerLeftGameRoom = 15;
+    public const int PlayerHasLeftGameQueue = 16;
+
+    public const int RecordingRequestedFromServer = 17;
+
+    public const int BeginSendingRecording = 18;
+
+    public const int SendRecordedPlayersUserName = 19;
+    public const int SendRecordedNumberOfTurns = 20;
+    public const int SendRecordedGamesStartingSymbol = 21;
+    public const int SendRecordedGamesTimeBetweenTurns = 22;
+    public const int SendRecordedGamesIndexOfMoveLocation = 23;
+
+    public const int FinishedSendingRecordingToServer = 24;
+    //public const int SendRecordingName
+
+    //Recordings 
 }
 
 public static class ServertoClientSignifiers
@@ -292,10 +306,20 @@ public static class ServertoClientSignifiers
     public const int GetCellsOfTicTacToeBoard = 11;
     public const int SendTicTacToeCellsToObserver = 12;
     public const int UpdateObserverOnMoveMade = 13;
-    public const int RecordingSentToClient = 14;
-    public const int SendNumberOfSavedRecordings = 15;
-    public const int ReloadDropDownMenu = 16;
-    public const int GameSessionSearchResponse = 17;
+
+    public const int SendNumberOfSavedRecordings = 14;
+    public const int ReloadDropDownMenu = 15;
+    public const int GameSessionSearchResponse = 16;
+
+    public const int RecordingStartingToBeSentToClient = 17;
+
+    public const int RecieveRecordingUserName = 18;
+    public const int RecieveRecordedNumberOfTurns = 19;
+    public const int RecieveRecordedStartingSymbol = 20;
+    public const int RecieveRecordedTimeBetweenturns = 21;
+    public const int RecieveRecordedIndexOfMoveLocation = 22;
+
+    public const int RecordingFinishedSendingToClient = 23;
 }
 
 public static class LoginResponse

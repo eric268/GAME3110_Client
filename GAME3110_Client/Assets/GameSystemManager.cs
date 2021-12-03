@@ -213,8 +213,8 @@ public class GameSystemManager : MonoBehaviour
             if (button == ticTacToeButtonCellArray[i] && buttonText.text == "" && myTurnToMove == true)
             {
                 opponentsTurn = true;
-                replayRecorder.timeBetweenTurnsArray[ReplayRecorder.turnNumber] = playerTurnCounter;
-                replayRecorder.cellNumberOfTurn[ReplayRecorder.turnNumber] = i;
+                replayRecorder.timeBetweenTurnsArray.Add(playerTurnCounter);
+                replayRecorder.cellNumberOfTurn.Add(i);
                 playerTurnCounter = 0.0f;
                 ReplayRecorder.turnNumber++;
 
@@ -450,8 +450,8 @@ public class GameSystemManager : MonoBehaviour
 
     public void OpponentMadeMove(int cellNumberOfMovePlayed)
     {
-        replayRecorder.cellNumberOfTurn[ReplayRecorder.turnNumber] = cellNumberOfMovePlayed;
-        replayRecorder.timeBetweenTurnsArray[ReplayRecorder.turnNumber] = opponentTurnCounter;
+        replayRecorder.cellNumberOfTurn.Add(cellNumberOfMovePlayed);
+        replayRecorder.timeBetweenTurnsArray.Add(opponentTurnCounter);
         opponentTurnCounter = 0.0f;
         opponentsTurn = false;
         ReplayRecorder.turnNumber++;
@@ -468,17 +468,19 @@ public class GameSystemManager : MonoBehaviour
 
     void SendRecordingToServer()
     {
-        string recordingPacket = string.Join(",", replayRecorder.username, replayRecorder.startingSymbol, replayRecorder.numberOfTurns);
-        for (int i = 0; i < replayRecorder.numberOfTurns; i++)
-        {
-            recordingPacket += "," + replayRecorder.timeBetweenTurnsArray[i];
-        }
-        for (int i = 0; i < replayRecorder.numberOfTurns; i++)
-        {
-            recordingPacket += "," + replayRecorder.cellNumberOfTurn[i];
-        }
-        Debug.Log(recordingPacket);
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingSentToServer, recordingPacket));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.BeginSendingRecording));
+        
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedPlayersUserName.ToString() + "," + replayRecorder.username);
+        
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesStartingSymbol.ToString() + "," + replayRecorder.startingSymbol);
+        
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedNumberOfTurns.ToString() + "," + replayRecorder.numberOfTurns);
+
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesTimeBetweenTurns.ToString() + "," + replayRecorder.SerializeReplayTimes());
+        
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesIndexOfMoveLocation.ToString() + "," + replayRecorder.SerializeReplayMoveIndex());
+
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.FinishedSendingRecordingToServer));
     }
 
     public void LoadAndBeginRecording(string recordingInfo)
@@ -496,7 +498,7 @@ public class GameSystemManager : MonoBehaviour
         int positionalCounter = 0;
         for (int i = 4; i < replayRecorder.numberOfTurns + 4; i++)
         {
-            replayRecorder.timeBetweenTurnsArray[positionalCounter++] = float.Parse(csv[i]);
+            replayRecorder.timeBetweenTurnsArray.Add(float.Parse(csv[i]));
         }
         positionalCounter = 0;
         for (int i = replayRecorder.numberOfTurns + 4; i < (2 * replayRecorder.numberOfTurns) + 4; i++)
@@ -703,7 +705,6 @@ public class GameSystemManager : MonoBehaviour
             replayDropDown.SetActive(true);
             replayDropDownButton.SetActive(true);
             replayDropDownText.SetActive(true);
-
             GetNumberOfSavedRecordingsFromServer();
         }
         else if (newState == GameStates.WaitingForMatch)
@@ -734,6 +735,24 @@ public class GameSystemManager : MonoBehaviour
             networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
         }
     }
+
+    string SerializeReplayRecorder(ReplayRecorder recording)
+    {
+        string recordingPacket = string.Join(",", recording.username, recording.startingSymbol, recording.numberOfTurns);
+        
+        foreach (float time in recording.timeBetweenTurnsArray)
+        {
+            recordingPacket += "," + time;
+        }
+        
+        foreach (int turnNumber in recording.cellNumberOfTurn)
+        {
+            recordingPacket += "," + turnNumber;
+        }
+        
+        return recordingPacket;
+    }
+
 }
 
 
@@ -748,20 +767,40 @@ public static class GameStates
 
 public class ReplayRecorder
 {
+    public string username;
     public static int turnNumber = 0;
-    public string name;
     public int numberOfTurns;
     public string startingSymbol;
-    public float[] timeBetweenTurnsArray;
-    public int[] cellNumberOfTurn;
-    public string username;
+    public List<float> timeBetweenTurnsArray;
+    public List<int> cellNumberOfTurn;
+
 
     public ReplayRecorder()
     {
-        name = "";
         numberOfTurns = 0;
         startingSymbol = "";
-        timeBetweenTurnsArray = new float[9];
-        cellNumberOfTurn = new int[9];
+        timeBetweenTurnsArray = new List<float>();
+        cellNumberOfTurn = new List<int>();
+        username = "";
+    }
+
+    public string SerializeReplayTimes()
+    {
+        string timeSerialized = "";
+        foreach (float time in timeBetweenTurnsArray)
+        {
+            timeSerialized += ',' + time;
+        }
+        return timeSerialized;
+    }
+
+    public string SerializeReplayMoveIndex()
+    {
+        string moveIndexSerialized = "";
+        foreach(int index in cellNumberOfTurn)
+        {
+            moveIndexSerialized += ',' + index;
+        }
+        return moveIndexSerialized;
     }
 }
