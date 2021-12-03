@@ -19,6 +19,7 @@ public class NetworkedClient : MonoBehaviour
     bool isConnected = false;
     int ourClientID;
     string opponentsSymbol;
+    ReplayRecorder loadedReplayRecording;
 
 
     GameObject gameSystemManager;
@@ -118,7 +119,7 @@ public class NetworkedClient : MonoBehaviour
     private void ProcessRecievedMsg(string msg, int id)
     {
         Debug.Log("msg received = " + msg + ".  connection id = " + id);
-        List<string> csv = msg.Split(',').ToList();
+        string[] csv = msg.Split(',');
         int signifier = int.Parse(csv[0]);
         if (signifier == ServertoClientSignifiers.LoginResponse)
         {
@@ -230,11 +231,6 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTicTacToeBoard(cellNumber, symbol);
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
         }
-        else if (signifier == ServertoClientSignifiers.RecordingStartingToBeSentToClient)
-        {
-            Debug.Log("Recording info: " + msg);
-            gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording(msg);
-        }
         else if (signifier == ServertoClientSignifiers.SendNumberOfSavedRecordings)
         {
             int numberOfRecordings = int.Parse(csv[1]);
@@ -245,6 +241,45 @@ public class NetworkedClient : MonoBehaviour
             Debug.Log("Game room search results");
             if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchFailed)
                 gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Game Room Not Found");
+        }
+
+        else if (signifier == ServertoClientSignifiers.RecordingStartingToBeSentToClient)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder = new ReplayRecorder();
+        }
+
+        else if (signifier == ServertoClientSignifiers.ServerSentRecordingUserName)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.username = csv[1];
+        }
+
+        else if (signifier == ServertoClientSignifiers.ServerSentRecordedStartingSymbol)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.startingSymbol = csv[1];
+        }
+
+        else if (signifier == ServertoClientSignifiers.ServerSentRecordedNumberOfTurns)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.numberOfTurns =int.Parse(csv[1]);
+        }
+
+        else if (signifier == ServertoClientSignifiers.ServerSentRecordedTimeBetweenTurns)
+        {
+            for (int i = 1; i < csv.Length; i++)
+            {
+                gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.timeBetweenTurnsArray.Add(float.Parse(csv[i]));
+            }
+        }
+        else if (signifier == ServertoClientSignifiers.ServerSentRecordedIndexOfMoveLocation)
+        {
+            for (int i = 1; i < csv.Length; i++)
+            {
+                gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.cellNumberOfTurn.Add(int.Parse(csv[i]));
+            }
+        }
+        else if (signifier == ServertoClientSignifiers.RecordingFinishedSendingToClient)
+        {
+            gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording();
         }
     }
 
@@ -313,11 +348,11 @@ public static class ServertoClientSignifiers
 
     public const int RecordingStartingToBeSentToClient = 17;
 
-    public const int RecieveRecordingUserName = 18;
-    public const int RecieveRecordedNumberOfTurns = 19;
-    public const int RecieveRecordedStartingSymbol = 20;
-    public const int RecieveRecordedTimeBetweenturns = 21;
-    public const int RecieveRecordedIndexOfMoveLocation = 22;
+    public const int ServerSentRecordingUserName = 18;
+    public const int ServerSentRecordedNumberOfTurns = 19;
+    public const int ServerSentRecordedStartingSymbol = 20;
+    public const int ServerSentRecordedTimeBetweenTurns = 21;
+    public const int ServerSentRecordedIndexOfMoveLocation = 22;
 
     public const int RecordingFinishedSendingToClient = 23;
 }

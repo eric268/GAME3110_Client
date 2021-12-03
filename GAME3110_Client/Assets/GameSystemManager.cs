@@ -476,35 +476,16 @@ public class GameSystemManager : MonoBehaviour
         
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedNumberOfTurns.ToString() + "," + replayRecorder.numberOfTurns);
 
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesTimeBetweenTurns.ToString() + "," + replayRecorder.SerializeReplayTimes());
-        
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesIndexOfMoveLocation.ToString() + "," + replayRecorder.SerializeReplayMoveIndex());
+
+        //Already serialized messages do not need a leading , added because that is already included in serialization function 
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesTimeBetweenTurns.ToString() + replayRecorder.SerializeReplayTimes());
+        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesIndexOfMoveLocation.ToString() + replayRecorder.SerializeReplayMoveIndex());
 
         networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.FinishedSendingRecordingToServer));
     }
 
-    public void LoadAndBeginRecording(string recordingInfo)
+    public void LoadAndBeginRecording()
     {
-
-        string[] csv = recordingInfo.Split(',');
-        //CSV 0 is the signifier so start at 1
-
-        ChangeGameState(GameStates.PlayingTicTacToe);
-        replayRecorder.username = (csv[1]);
-        replayRecorder.startingSymbol = csv[2];
-        replayRecorder.numberOfTurns = int.Parse(csv[3]);
-
-        //There are numberOfTurns iterations for both time and cell location so need to double it
-        int positionalCounter = 0;
-        for (int i = 4; i < replayRecorder.numberOfTurns + 4; i++)
-        {
-            replayRecorder.timeBetweenTurnsArray.Add(float.Parse(csv[i]));
-        }
-        positionalCounter = 0;
-        for (int i = replayRecorder.numberOfTurns + 4; i < (2 * replayRecorder.numberOfTurns) + 4; i++)
-        {
-            replayRecorder.cellNumberOfTurn[positionalCounter++] = int.Parse(csv[i]);
-        }
         isWatchingReplay = true;
         ReplayRecorder.turnNumber = 0;
         currentReplaySymbol = replayRecorder.startingSymbol;
@@ -513,12 +494,11 @@ public class GameSystemManager : MonoBehaviour
         replayPauseButton.SetActive(true);
         replayRestartButton.SetActive(true);
         chatScrollViewText.text = "";
+        ChangeGameState(GameStates.PlayingTicTacToe);
     }
 
     void UpdateTicTacToeRecording()
     {
-        //Debug.Log("Start replay");
-        //Debug.Log("Counter: " + replayRecordingCounter);
         replayRecordingCounter += Time.deltaTime;
 
 
@@ -675,7 +655,6 @@ public class GameSystemManager : MonoBehaviour
         replayPauseButton.SetActive(false);
         replayRestartButton.SetActive(false);
         EraseAllTicTacToeCells();
-        isWatchingReplay = false;
         ReplayRecorder.turnNumber = 0;
         opponentTurnCounter = 0.0f;
         playerTurnCounter = 0.0f;
@@ -705,6 +684,7 @@ public class GameSystemManager : MonoBehaviour
             replayDropDown.SetActive(true);
             replayDropDownButton.SetActive(true);
             replayDropDownText.SetActive(true);
+            isWatchingReplay = false;
             GetNumberOfSavedRecordingsFromServer();
         }
         else if (newState == GameStates.WaitingForMatch)
@@ -723,7 +703,9 @@ public class GameSystemManager : MonoBehaviour
             chatInputField.SetActive(true);
             chatInputFieldSubmitButton.SetActive(true);
             ResetAllCellButtonTextValues();
-            replayRecorder = new ReplayRecorder();
+            
+            if (!isWatchingReplay)
+                replayRecorder = new ReplayRecorder();
         }
         else if (newState == GameStates.Leaderboard)
         {
@@ -735,24 +717,6 @@ public class GameSystemManager : MonoBehaviour
             networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
         }
     }
-
-    string SerializeReplayRecorder(ReplayRecorder recording)
-    {
-        string recordingPacket = string.Join(",", recording.username, recording.startingSymbol, recording.numberOfTurns);
-        
-        foreach (float time in recording.timeBetweenTurnsArray)
-        {
-            recordingPacket += "," + time;
-        }
-        
-        foreach (int turnNumber in recording.cellNumberOfTurn)
-        {
-            recordingPacket += "," + turnNumber;
-        }
-        
-        return recordingPacket;
-    }
-
 }
 
 
@@ -789,7 +753,7 @@ public class ReplayRecorder
         string timeSerialized = "";
         foreach (float time in timeBetweenTurnsArray)
         {
-            timeSerialized += ',' + time;
+            timeSerialized += "," + time;
         }
         return timeSerialized;
     }
@@ -799,7 +763,7 @@ public class ReplayRecorder
         string moveIndexSerialized = "";
         foreach(int index in cellNumberOfTurn)
         {
-            moveIndexSerialized += ',' + index;
+            moveIndexSerialized += "," + index;
         }
         return moveIndexSerialized;
     }
