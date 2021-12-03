@@ -34,7 +34,7 @@ public class NetworkedClient : MonoBehaviour
             }
         }
 
-            Connect();
+        Connect();
     }
 
     // Update is called once per frame
@@ -74,7 +74,7 @@ public class NetworkedClient : MonoBehaviour
             }
         }
     }
-    
+
     private void Connect()
     {
 
@@ -102,12 +102,12 @@ public class NetworkedClient : MonoBehaviour
             }
         }
     }
-    
+
     public void Disconnect()
     {
         NetworkTransport.Disconnect(hostID, connectionID, out error);
     }
-    
+
     public void SendMessageToHost(string msg)
     {
         byte[] buffer = Encoding.Unicode.GetBytes(msg);
@@ -155,7 +155,7 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
             gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
-   
+
         }
         else if (signifier == ServertoClientSignifiers.OpponentPlayedAMove)
         {
@@ -185,9 +185,9 @@ public class NetworkedClient : MonoBehaviour
         {
             int numberOfPlayersToDisplay = int.Parse(csv[1]);
             int playerRanking = 1;
-            for(int i = 2; i < (numberOfPlayersToDisplay*2) + 2; i += 2)
+            for (int i = 2; i < (numberOfPlayersToDisplay * 2) + 2; i += 2)
             {
-                string leaderboardPlayerResults = playerRanking++ + ". " + csv[i]+ "\n";
+                string leaderboardPlayerResults = playerRanking++ + ". " + csv[i] + "\n";
                 string leaderboardWinsResults = "Wins: " + csv[i + 1] + "\n";
                 gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults, leaderboardWinsResults);
             }
@@ -202,7 +202,7 @@ public class NetworkedClient : MonoBehaviour
             string requesterID = csv[1];
             string boardResults = gameSystemManager.GetComponent<GameSystemManager>().ConverCurrentTicTacToeBoardToString();
             gameSystemManager.GetComponent<GameSystemManager>().networkClient.GetComponent<NetworkedClient>()
-                .SendMessageToHost(string.Join(",",ClientToSeverSignifiers.SendCellsOfTicTacToeBoardToServer.ToString(), requesterID, boardResults));
+                .SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SendCellsOfTicTacToeBoardToServer.ToString(), requesterID, boardResults));
         }
         else if (signifier == ServertoClientSignifiers.SendTicTacToeCellsToObserver)
         {
@@ -217,7 +217,7 @@ public class NetworkedClient : MonoBehaviour
                 if (boardResults[i] != 'B')
                     break;
             }
-            
+
             string symbol = (boardResults[i] == 'X') ? "O" : "X";
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
         }
