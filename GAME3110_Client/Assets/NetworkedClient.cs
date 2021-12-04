@@ -185,11 +185,13 @@ public class NetworkedClient : MonoBehaviour
         else if (signifier == ServertoClientSignifiers.LeaderboardShowRequest)
         {
             int numberOfPlayersToDisplay = int.Parse(csv[1]);
-            int playerRanking = 1;
-            for (int i = 2; i < (numberOfPlayersToDisplay * 2) + 2; i += 2)
+            int index = 2;
+
+            for (int i = 0; i < numberOfPlayersToDisplay; i ++)
             {
-                string leaderboardPlayerResults = playerRanking++ + ". " + csv[i] + "\n";
-                string leaderboardWinsResults = "Wins: " + csv[i + 1] + "\n";
+                int leaderboardPosition = (i + 1);
+                string leaderboardPlayerResults = leaderboardPosition + ". " + csv[index++] + "\n";
+                string leaderboardWinsResults = "Wins: " + csv[index++] + "\n";
                 gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults, leaderboardWinsResults);
             }
         }
@@ -202,6 +204,7 @@ public class NetworkedClient : MonoBehaviour
         {
             string requesterID = csv[1];
             string boardResults = gameSystemManager.GetComponent<GameSystemManager>().ConverCurrentTicTacToeBoardToString();
+
             gameSystemManager.GetComponent<GameSystemManager>().networkClient.GetComponent<NetworkedClient>()
                 .SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SendCellsOfTicTacToeBoardToServer.ToString(), requesterID, boardResults));
         }
@@ -212,21 +215,11 @@ public class NetworkedClient : MonoBehaviour
             gameSystemManager.GetComponent<GameSystemManager>().PopulateObserverTicTacToeBoard(boardResults);
             gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
             gameSystemManager.GetComponent<GameSystemManager>().gameStatusText.GetComponent<TextMeshProUGUI>().text = "OBSERVER";
-            int i = 8;
-            for (; i > 0; i--)
-            {
-                if (boardResults[i] != 'B')
-                    break;
-            }
-
-            string symbol = (boardResults[i] == 'X') ? "O" : "X";
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
         }
         else if (signifier == ServertoClientSignifiers.UpdateObserverOnMoveMade)
         {
             int cellNumber = int.Parse(csv[1]);
             string symbol = csv[2];
-            symbol = (csv[2] == "X") ? "O" : "X";
 
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTicTacToeBoard(cellNumber, symbol);
             gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
