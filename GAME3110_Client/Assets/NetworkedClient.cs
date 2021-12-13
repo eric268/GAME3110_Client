@@ -18,25 +18,21 @@ public class NetworkedClient : MonoBehaviour
     byte error;
     bool isConnected = false;
     int ourClientID;
-    string opponentsSymbol;
-    ReplayRecorder loadedReplayRecording;
-
-
-    GameObject gameSystemManager;
 
     // Start is called before the first frame update
     void Start()
     {
-        GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
-        foreach (GameObject go in allObjects)
+        if (NetworkedClientProcessing.GetNetworkedClient() == null)
         {
-            if (go.name == "GameSystemManager")
-            {
-                gameSystemManager = go;
-            }
+            DontDestroyOnLoad(this.gameObject);
+            NetworkedClientProcessing.SetNetworkedClient(this);
+            Connect();
         }
-
-        Connect();
+        else
+        {
+            Debug.Log("Singleton-ish architecture violation detected, investigate where NetworkedClient.cs Start() is being called.  Are you creating a second instance of the NetworkedClient game object or has the NetworkedClient.cs been attached to more than one game object?");
+            Destroy(this.gameObject);
+        }
     }
 
     // Update is called once per frame
@@ -44,6 +40,7 @@ public class NetworkedClient : MonoBehaviour
     {
 
         UpdateNetworkConnection();
+        
     }
 
     private void UpdateNetworkConnection()
@@ -62,22 +59,24 @@ public class NetworkedClient : MonoBehaviour
             {
                 case NetworkEventType.ConnectEvent:
                     Debug.Log("connected.  " + recConnectionID);
+                    NetworkedClientProcessing.ConnectionEvent();
                     ourClientID = recConnectionID;
                     break;
                 case NetworkEventType.DataEvent:
                     string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
-                    ProcessRecievedMsg(msg, recConnectionID);
+                    NetworkedClientProcessing.ReceivedMessageFromServer(msg);
                     //Debug.Log("got msg = " + msg);
                     break;
                 case NetworkEventType.DisconnectEvent:
                     isConnected = false;
+                    NetworkedClientProcessing.DisconnectionEvent();
                     Debug.Log("disconnected.  " + recConnectionID);
                     break;
             }
         }
     }
 
-    private void Connect()
+    public void Connect()
     {
 
         if (!isConnected)
@@ -110,171 +109,12 @@ public class NetworkedClient : MonoBehaviour
         NetworkTransport.Disconnect(hostID, connectionID, out error);
     }
 
-    public void SendMessageToHost(string msg)
+    public void SendMessageToServer(string msg)
     {
         byte[] buffer = Encoding.Unicode.GetBytes(msg);
         NetworkTransport.Send(hostID, connectionID, reliableChannelID, buffer, msg.Length * sizeof(char), out error);
     }
 
-    private void ProcessRecievedMsg(string msg, int id)
-    {
-        Debug.Log("msg received = " + msg + ".  connection id = " + id);
-        string[] csv = msg.Split(',');
-        int signifier = int.Parse(csv[0]);
-        if (signifier == ServertoClientSignifiers.LoginResponse)
-        {
-            int loginResultSignifier = int.Parse(csv[1]);
-
-            Debug.Log("Login Result: " + loginResultSignifier);
-            if (loginResultSignifier == LoginResponse.Success)
-            {
-                gameSystemManager.GetComponent<GameSystemManager>().userName = csv[2];
-                gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.MainMenu);
-            }
-            else if (loginResultSignifier == LoginResponse.FailureNameInUse)
-            {
-                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Failed: Username in use");
-                gameSystemManager.GetComponent<GameSystemManager>().UpdateLogInInputFields(true, true);
-            }
-            else if (loginResultSignifier == LoginResponse.FailureNameNotFound)
-            {
-                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Failed: Username not found");
-                gameSystemManager.GetComponent<GameSystemManager>().UpdateLogInInputFields(true, true);
-            }
-            else if (loginResultSignifier == LoginResponse.FailureIncorrectPassword)
-            {
-                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Failed: Incorrect Password");
-                gameSystemManager.GetComponent<GameSystemManager>().UpdateLogInInputFields(false, true);
-            }
-
-        }
-        else if (signifier == ServertoClientSignifiers.GameSessionStarted)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
-            opponentsSymbol = (csv[1] == "X") ? "O" : "X";
-            bool myTurn = (int.Parse(csv[2]) == 1) ? true : false;
-            gameSystemManager.GetComponent<GameSystemManager>().InitGameSymbolsSetCurrentTurn(csv[1], opponentsSymbol, myTurn);
-            gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
-            gameSystemManager.GetComponent<GameSystemManager>().gameSessionID = int.Parse(csv[3]);
-
-        }
-        else if (signifier == ServertoClientSignifiers.OpponentPlayedAMove)
-        {
-            int cellNumberOfMovePlayed = int.Parse(csv[1]);
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateTicTacToeGridAfterMove(cellNumberOfMovePlayed);
-            gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = true;
-            gameSystemManager.GetComponent<GameSystemManager>().UpdatePlayersCurrentTurnText(true);
-            gameSystemManager.GetComponent<GameSystemManager>().OpponentMadeMove(cellNumberOfMovePlayed);
-        }
-        else if (signifier == ServertoClientSignifiers.OpponentWon)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText(csv[1] + " Won!");
-            gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
-            gameSystemManager.GetComponent<GameSystemManager>().GameOver();
-        }
-        else if (signifier == ServertoClientSignifiers.GameDrawn)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateGameStatusText("Game Drawn");
-            gameSystemManager.GetComponent<GameSystemManager>().myTurnToMove = false;
-            gameSystemManager.GetComponent<GameSystemManager>().GameOver();
-        }
-        else if (signifier == ServertoClientSignifiers.OpponentRestartedGame)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
-        }
-        else if (signifier == ServertoClientSignifiers.LeaderboardShowRequest)
-        {
-            int numberOfPlayersToDisplay = int.Parse(csv[1]);
-            int index = 2;
-
-            for (int i = 0; i < numberOfPlayersToDisplay; i ++)
-            {
-                int leaderboardPosition = (i + 1);
-                string leaderboardPlayerResults = leaderboardPosition + ". " + csv[index++] + "\n";
-                string leaderboardWinsResults = "Wins: " + csv[index++] + "\n";
-                gameSystemManager.GetComponent<GameSystemManager>().AddPlayerToLeaderboardTextBox(leaderboardPlayerResults, leaderboardWinsResults);
-            }
-        }
-        else if (signifier == ServertoClientSignifiers.SendPlayerChatToOpponent)
-        {
-            string message = "\n" + csv[1] + ": " + csv[2];
-            gameSystemManager.GetComponent<GameSystemManager>().AddOpponenetMessageToChat(message);
-        }
-        else if (signifier == ServertoClientSignifiers.GetCellsOfTicTacToeBoard)
-        {
-            string requesterID = csv[1];
-            string boardResults = gameSystemManager.GetComponent<GameSystemManager>().ConverCurrentTicTacToeBoardToString();
-
-            gameSystemManager.GetComponent<GameSystemManager>().networkClient.GetComponent<NetworkedClient>()
-                .SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SendCellsOfTicTacToeBoardToServer.ToString(), requesterID, boardResults));
-        }
-        else if (signifier == ServertoClientSignifiers.SendTicTacToeCellsToObserver)
-        {
-            string boardResults = csv[1];
-            gameSystemManager.GetComponent<GameSystemManager>().ChangeGameState(GameStates.PlayingTicTacToe);
-            gameSystemManager.GetComponent<GameSystemManager>().PopulateObserverTicTacToeBoard(boardResults);
-            gameSystemManager.GetComponent<GameSystemManager>().chatScrollViewText.text = "";
-            gameSystemManager.GetComponent<GameSystemManager>().gameStatusText.GetComponent<TextMeshProUGUI>().text = "OBSERVER";
-        }
-        else if (signifier == ServertoClientSignifiers.UpdateObserverOnMoveMade)
-        {
-            int cellNumber = int.Parse(csv[1]);
-            string symbol = csv[2];
-
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTicTacToeBoard(cellNumber, symbol);
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateObserverTurnDisplay(symbol);
-        }
-        else if (signifier == ServertoClientSignifiers.SendNumberOfSavedRecordings)
-        {
-            int numberOfRecordings = int.Parse(csv[1]);
-            gameSystemManager.GetComponent<GameSystemManager>().UpdateRecordingDropdownMenu(numberOfRecordings);
-        }
-        else if (signifier == ServertoClientSignifiers.GameSessionSearchResponse)
-        {
-            Debug.Log("Game room search results");
-            if (int.Parse(csv[1]) == GameRoomSearchResponse.SearchFailed)
-                gameSystemManager.GetComponent<GameSystemManager>().SetErrorDisplayMessage("Game Room Not Found");
-        }
-
-        else if (signifier == ServertoClientSignifiers.RecordingStartingToBeSentToClient)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder = new ReplayRecorder();
-        }
-
-        else if (signifier == ServertoClientSignifiers.ServerSentRecordingUserName)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.username = csv[1];
-        }
-
-        else if (signifier == ServertoClientSignifiers.ServerSentRecordedStartingSymbol)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.startingSymbol = csv[1];
-        }
-
-        else if (signifier == ServertoClientSignifiers.ServerSentRecordedNumberOfTurns)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.numberOfTurns =int.Parse(csv[1]);
-        }
-
-        else if (signifier == ServertoClientSignifiers.ServerSentRecordedTimeBetweenTurns)
-        {
-            for (int i = 1; i < csv.Length; i++)
-            {
-                gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.timeBetweenTurnsArray.Add(float.Parse(csv[i]));
-            }
-        }
-        else if (signifier == ServertoClientSignifiers.ServerSentRecordedIndexOfMoveLocation)
-        {
-            for (int i = 1; i < csv.Length; i++)
-            {
-                gameSystemManager.GetComponent<GameSystemManager>().replayRecorder.cellNumberOfTurn.Add(int.Parse(csv[i]));
-            }
-        }
-        else if (signifier == ServertoClientSignifiers.RecordingFinishedSendingToClient)
-        {
-            gameSystemManager.GetComponent<GameSystemManager>().LoadAndBeginRecording();
-        }
-    }
 
     public bool IsConnected()
     {
@@ -282,88 +122,5 @@ public class NetworkedClient : MonoBehaviour
     }
 
 
-}
-public static class ClientToSeverSignifiers
-{
-    public const int Login = 1;
-    public const int CreateAccount = 2;
-    public const int AddToGameSessionQueue = 3;
-    public const int TicTacToePlay = 4;
-    public const int TicTacToeMoveMade = 5;
-    public const int GameOver = 6;
-    public const int GameDrawn = 7;
-    public const int RestartGame = 8;
-    public const int ShowLeaderboard = 9;
-    public const int PlayerSentMessageInChat = 10;
-    public const int SearchGameRoomRequestMade = 11;
-    public const int SendCellsOfTicTacToeBoardToServer = 12;
-
-    public const int RequestNumberOfSavedRecordings = 13;
-    public const int ClearRecordingOnServer = 14;
-    public const int PlayerLeftGameRoom = 15;
-    public const int PlayerHasLeftGameQueue = 16;
-
-    public const int RecordingRequestedFromServer = 17;
-
-    public const int BeginSendingRecording = 18;
-
-    public const int SendRecordedPlayersUserName = 19;
-    public const int SendRecordedNumberOfTurns = 20;
-    public const int SendRecordedGamesStartingSymbol = 21;
-    public const int SendRecordedGamesTimeBetweenTurns = 22;
-    public const int SendRecordedGamesIndexOfMoveLocation = 23;
-
-    public const int FinishedSendingRecordingToServer = 24;
-    //public const int SendRecordingName
-
-    //Recordings 
-}
-
-public static class ServertoClientSignifiers
-{
-    public const int LoginResponse = 1;
-    public const int GameSessionStarted = 2;
-    public const int OpponentTicTacToePlay = 3;
-    public const int OpponentPlayedAMove = 4;
-    public const int OpponentWon = 5;
-    public const int GameDrawn = 6;
-    public const int OpponentRestartedGame = 7;
-    public const int LeaderboardShowRequest = 8;
-    public const int SendPlayerChatToOpponent = 9;
-    public const int SearchFoundValidGameRoom = 10;
-    public const int GetCellsOfTicTacToeBoard = 11;
-    public const int SendTicTacToeCellsToObserver = 12;
-    public const int UpdateObserverOnMoveMade = 13;
-
-    public const int SendNumberOfSavedRecordings = 14;
-    public const int ReloadDropDownMenu = 15;
-    public const int GameSessionSearchResponse = 16;
-
-    public const int RecordingStartingToBeSentToClient = 17;
-
-    public const int ServerSentRecordingUserName = 18;
-    public const int ServerSentRecordedNumberOfTurns = 19;
-    public const int ServerSentRecordedStartingSymbol = 20;
-    public const int ServerSentRecordedTimeBetweenTurns = 21;
-    public const int ServerSentRecordedIndexOfMoveLocation = 22;
-
-    public const int RecordingFinishedSendingToClient = 23;
-}
-
-public static class LoginResponse
-{
-    public const int Success = 1;
-
-    public const int FailureNameInUse = 2;
-
-    public const int FailureNameNotFound = 3;
-
-    public const int FailureIncorrectPassword = 4;
-}
-
-public static class GameRoomSearchResponse
-{
-    public const int SearchSucceeded = 1;
-    public const int SearchFailed = 2;
 }
 

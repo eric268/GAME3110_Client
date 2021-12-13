@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using UnityEngine;
 
-public class GameSystemManager : MonoBehaviour
+public class GameLogic : MonoBehaviour
 {
     public GameObject networkClient;
 
@@ -42,6 +42,7 @@ public class GameSystemManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        NetworkedClientProcessing.SetGameLogic(this);
         GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
         foreach (GameObject go in allObjects)
         {
@@ -154,13 +155,13 @@ public class GameSystemManager : MonoBehaviour
         {
             if (chatInputField.GetComponent<TMP_InputField>().text != "")
             {
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
+                networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
                 chatScrollViewText.text += "\n" + userName + ": " + chatInputField.GetComponent<TMP_InputField>().text;
                 chatInputField.GetComponent<TMP_InputField>().text = "";
             }
             if (searchGameRoomInputField.GetComponent<TMP_InputField>().text != "")
             {
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
+                networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
                 searchGameRoomInputField.GetComponent<TMP_InputField>().text = "";
             }
         }
@@ -195,11 +196,11 @@ public class GameSystemManager : MonoBehaviour
 
         if (toggleLogIn.GetComponent<Toggle>().isOn)
         {
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.Login + "," + n + "," + p);
+            networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.Login + "," + n + "," + p);
         }
         else
         {
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.CreateAccount + "," + n + "," + p);
+            networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.CreateAccount + "," + n + "," + p);
         }
     }
 
@@ -223,7 +224,7 @@ public class GameSystemManager : MonoBehaviour
                 myTurnToMove = false;
                 UpdatePlayersCurrentTurnText(myTurnToMove);
                 buttonText.text = playersTicTacToeSymbol;
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.TicTacToeMoveMade + "," + i + "," + playersTicTacToeSymbol);
+                networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.TicTacToeMoveMade + "," + i + "," + playersTicTacToeSymbol);
                 if (CheckIfGameOver())
                 {
                     Debug.Log("Printing Symbols");
@@ -250,14 +251,14 @@ public class GameSystemManager : MonoBehaviour
 
     private void FindGameSessionButtonPressed()
     {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.AddToGameSessionQueue.ToString());
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.AddToGameSessionQueue.ToString());
         ChangeGameState(GameStates.WaitingForMatch);
     }
 
     private void MainMenuGameButtonPressed()
     {
         ChangeGameState(GameStates.MainMenu);
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.PlayerLeftGameRoom.ToString());
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.PlayerLeftGameRoom.ToString());
     }
 
     public void InitGameSymbolsSetCurrentTurn(string playerSymbol, string opponentSymbol, bool myTurn)
@@ -312,14 +313,14 @@ public class GameSystemManager : MonoBehaviour
             if (CheckIfGameWon())
             {
                 gameStatusText.GetComponent<TextMeshProUGUI>().text = userName + " Won!";
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameOver.ToString() + "," + userName);
+                networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.GameOver.ToString() + "," + userName);
                 GameOver();
                 return true;
             }
             else if (numberOfTotalMovesMade == 9)
             {
                 gameStatusText.GetComponent<TextMeshProUGUI>().text = "Game Drawn";
-                networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.GameDrawn.ToString());
+                networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.GameDrawn.ToString());
                 GameOver();
                 return true;
             }
@@ -427,7 +428,7 @@ public class GameSystemManager : MonoBehaviour
     {
         if (searchGameRoomInputField.GetComponent<TMP_InputField>().text != "")
         {
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
+            networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.SearchGameRoomRequestMade, searchGameRoomInputField.GetComponent<TMP_InputField>().text));
             searchGameRoomInputField.GetComponent<TMP_InputField>().text = "";
         }
     }
@@ -435,7 +436,7 @@ public class GameSystemManager : MonoBehaviour
     {
         if (chatInputField.GetComponent<TMP_InputField>().text != "")
         {
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
+            networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.PlayerSentMessageInChat, userName, chatInputField.GetComponent<TMP_InputField>().text));
             chatScrollViewText.text += "\n" + userName + ": " + chatInputField.GetComponent<TMP_InputField>().text;
             chatInputField.GetComponent<TMP_InputField>().text = "";
         }
@@ -444,7 +445,7 @@ public class GameSystemManager : MonoBehaviour
     {
         int menuIndex = replayDropDown.GetComponent<TMP_Dropdown>().value;
         Debug.Log(replayDropDown.GetComponent<TMP_Dropdown>().options[menuIndex].text);
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer, userName, menuIndex));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.RecordingRequestedFromServer, userName, menuIndex));
         replayDropDown.GetComponent<TMP_Dropdown>().RefreshShownValue();
     }
 
@@ -468,20 +469,20 @@ public class GameSystemManager : MonoBehaviour
 
     void SendRecordingToServer()
     {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.BeginSendingRecording));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.BeginSendingRecording));
         
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedPlayersUserName.ToString() + "," + replayRecorder.username);
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.SendRecordedPlayersUserName.ToString() + "," + replayRecorder.username);
         
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesStartingSymbol.ToString() + "," + replayRecorder.startingSymbol);
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.SendRecordedGamesStartingSymbol.ToString() + "," + replayRecorder.startingSymbol);
         
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedNumberOfTurns.ToString() + "," + replayRecorder.numberOfTurns);
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.SendRecordedNumberOfTurns.ToString() + "," + replayRecorder.numberOfTurns);
 
 
         //Already serialized messages do not need a leading , added because that is already included in serialization function 
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesTimeBetweenTurns.ToString() + replayRecorder.SerializeReplayTimes());
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.SendRecordedGamesIndexOfMoveLocation.ToString() + replayRecorder.SerializeReplayMoveIndex());
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.SendRecordedGamesTimeBetweenTurns.ToString() + replayRecorder.SerializeReplayTimes());
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.SendRecordedGamesIndexOfMoveLocation.ToString() + replayRecorder.SerializeReplayMoveIndex());
 
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.FinishedSendingRecordingToServer));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.FinishedSendingRecordingToServer));
     }
 
     public void LoadAndBeginRecording()
@@ -490,11 +491,12 @@ public class GameSystemManager : MonoBehaviour
         ReplayRecorder.turnNumber = 0;
         currentReplaySymbol = replayRecorder.startingSymbol;
         gameStatusText.GetComponent<TextMeshProUGUI>().text = "Replay";
+        ChangeGameState(GameStates.PlayingTicTacToe);
         replayPlayButton.SetActive(true);
         replayPauseButton.SetActive(true);
         replayRestartButton.SetActive(true);
         chatScrollViewText.text = "";
-        ChangeGameState(GameStates.PlayingTicTacToe);
+ 
     }
 
     void UpdateTicTacToeRecording()
@@ -530,7 +532,7 @@ public class GameSystemManager : MonoBehaviour
 
     public void GetNumberOfSavedRecordingsFromServer()
     {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.RequestNumberOfSavedRecordings, userName));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.RequestNumberOfSavedRecordings, userName));
     }
 
     public void UpdateRecordingDropdownMenu(int numberOfSavedRecordings)
@@ -567,12 +569,12 @@ public class GameSystemManager : MonoBehaviour
 
     void ClearReplayDropDownButtonPressed()
     {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.ClearRecordingOnServer, userName));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.ClearRecordingOnServer, userName));
     }
 
     void LeaveGameQueueButtonPressed()
     {
-        networkClient.GetComponent<NetworkedClient>().SendMessageToHost(string.Join(",", ClientToSeverSignifiers.PlayerHasLeftGameQueue));
+        networkClient.GetComponent<NetworkedClient>().SendMessageToServer(string.Join(",", ClientToSeverSignifiers.PlayerHasLeftGameQueue));
         ChangeGameState(GameStates.MainMenu);
     }
 
@@ -714,7 +716,7 @@ public class GameSystemManager : MonoBehaviour
             leaderboardWinsText.SetActive(true);
             leaderboardNamesText.GetComponent<TextMeshProUGUI>().text = "\t  Leaderboard\n\n";
             leaderboardWinsText.GetComponent<TextMeshProUGUI>().text = "\n\n";
-            networkClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToSeverSignifiers.ShowLeaderboard.ToString());
+            networkClient.GetComponent<NetworkedClient>().SendMessageToServer(ClientToSeverSignifiers.ShowLeaderboard.ToString());
         }
     }
 }
